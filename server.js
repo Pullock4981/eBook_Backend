@@ -22,7 +22,7 @@ const { apiLimiter } = require('./middleware/rateLimiter');
 // Import routes
 const testRoutes = require('./routes/test');
 const userRoutes = require('./routes/user');
-// const authRoutes = require('./routes/auth');
+const authRoutes = require('./routes/auth');
 
 // ==================== Middleware Setup ====================
 
@@ -82,12 +82,13 @@ app.get('/api/health', async (req, res) => {
 });
 
 // ==================== API Routes ====================
+// Authentication routes (Part 6)
+app.use('/api/auth', authRoutes);
 // Test routes (for database testing - Part 2)
 app.use('/api/test', testRoutes);
 // User routes (profile and address management - Part 4)
 app.use('/api/users', userRoutes);
 // Routes will be added here in future parts
-// app.use('/api/auth', authRoutes);
 // app.use('/api/products', productRoutes);
 // app.use('/api/orders', orderRoutes);
 

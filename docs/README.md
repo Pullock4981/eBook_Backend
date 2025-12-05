@@ -9,8 +9,10 @@ Welcome to the eBook Backend API documentation. All project documentation is org
 - [Part 2: Database Connection & Testing](./PART2_DOCUMENTATION.md) - MongoDB connection testing, CRUD operations, 3-layer architecture implementation
 - [Part 3: Basic Middleware Setup](./PART3_DOCUMENTATION.md) - Request validation, authentication, rate limiting, input sanitization, role-based access
 - [Part 4: User Model & Schema](./PART4_DOCUMENTATION.md) - Complete user model, address management, profile management, password management
+- [Part 6: Authentication Routes & Controllers](./PART6_DOCUMENTATION.md) - Mobile-based registration, OTP authentication, passwordless login, JWT token generation
 
 ### Coming Soon
+- Part 5: OTP Service (SMS Integration)
 - Part 4: User Model & Schema
 - Part 5: OTP Service
 - Part 6: Authentication Routes & Controllers
