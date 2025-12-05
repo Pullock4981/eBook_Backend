@@ -17,7 +17,8 @@ const connectDB = require('./config/database');
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
 
-// Import routes (will be added in future parts)
+// Import routes
+const testRoutes = require('./routes/test');
 // const authRoutes = require('./routes/auth');
 
 // ==================== Middleware Setup ====================
@@ -47,17 +48,33 @@ app.get('/', (req, res) => {
     });
 });
 
-// API status route
-app.get('/api/health', (req, res) => {
+// API status route with database status
+app.get('/api/health', async (req, res) => {
+    const mongoose = require('mongoose');
+    const dbState = mongoose.connection.readyState;
+    const dbStates = {
+        0: 'disconnected',
+        1: 'connected',
+        2: 'connecting',
+        3: 'disconnecting'
+    };
+
     res.json({
         success: true,
         status: 'healthy',
-        database: 'connected', // Will update after DB connection
+        database: {
+            state: dbStates[dbState] || 'unknown',
+            isConnected: dbState === 1,
+            host: mongoose.connection.host,
+            name: mongoose.connection.name
+        },
         timestamp: new Date().toISOString()
     });
 });
 
 // ==================== API Routes ====================
+// Test routes (for database testing - Part 2)
+app.use('/api/test', testRoutes);
 // Routes will be added here in future parts
 // app.use('/api/auth', authRoutes);
 // app.use('/api/products', productRoutes);
