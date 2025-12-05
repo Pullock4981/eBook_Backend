@@ -16,6 +16,8 @@ const connectDB = require('./config/database');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
+const { sanitizeInput } = require('./middleware/sanitize');
+const { apiLimiter } = require('./middleware/rateLimiter');
 
 // Import routes
 const testRoutes = require('./routes/test');
@@ -33,8 +35,14 @@ app.use(cors({
 }));
 
 // Body parser middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' })); // Limit JSON payload size
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Input sanitization middleware (protect against XSS)
+app.use(sanitizeInput);
+
+// Rate limiting middleware (apply to all routes)
+app.use('/api/', apiLimiter);
 
 // ==================== Basic Routes ====================
 
