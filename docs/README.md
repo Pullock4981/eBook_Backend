@@ -8,6 +8,7 @@ Welcome to the eBook Backend API documentation. All project documentation is org
 - [Part 1: Project Setup](./PART1_DOCUMENTATION.md) - Initial project setup, folder structure, and configuration
 - [Part 2: Database Connection & Testing](./PART2_DOCUMENTATION.md) - MongoDB connection testing, CRUD operations, 3-layer architecture implementation
 - [Part 3: Basic Middleware Setup](./PART3_DOCUMENTATION.md) - Request validation, authentication, rate limiting, input sanitization, role-based access
+- [Part 4: User Model & Schema](./PART4_DOCUMENTATION.md) - Complete user model, address management, profile management, password management
 
 ### Coming Soon
 - Part 4: User Model & Schema
