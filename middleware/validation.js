@@ -93,6 +93,20 @@ const commonRules = {
             .withMessage('OTP must be 6 digits')
             .isNumeric()
             .withMessage('OTP must contain only numbers');
+    },
+
+    // Name validation
+    name: (field = 'name', required = true) => {
+        const { body } = require('express-validator');
+        let rule = body(field).trim();
+
+        if (required) {
+            rule = rule.notEmpty().withMessage('Name is required');
+        }
+
+        return rule
+            .isLength({ min: 2, max: 100 })
+            .withMessage('Name must be between 2 and 100 characters');
     }
 };
 

@@ -19,7 +19,9 @@ router.post(
     authLimiter,
     otpLimiter,
     [
-        commonRules.mobile('mobile')
+        commonRules.mobile('mobile'),
+        commonRules.name('name', true),
+        commonRules.password('password', 6)
     ],
     validate,
     authController.register

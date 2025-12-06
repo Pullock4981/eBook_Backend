@@ -12,9 +12,11 @@ const { generateToken } = require('../config/jwt');
  * Register a new user (mobile number based)
  * Sends OTP for verification
  * @param {String} mobile - Mobile number
+ * @param {String} name - Full name
+ * @param {String} password - Password
  * @returns {Promise<Object>} - Registration result
  */
-const register = async (mobile) => {
+const register = async (mobile, name, password) => {
     // Check if user already exists
     const existingUser = await userRepository.findByMobile(mobile);
 
@@ -22,19 +24,48 @@ const register = async (mobile) => {
         throw new Error('User already registered and verified');
     }
 
-    // If user exists but not verified, update OTP
+    // Prepare user data
+    const userData = {
+        mobile,
+        isVerified: false
+    };
+
+    // Add name to profile if provided
+    if (name) {
+        userData.profile = {
+            name: name.trim()
+        };
+    }
+
+    // Add password if provided
+    if (password) {
+        userData.password = password;
+    }
+
+    // If user exists but not verified, update user data and resend OTP
     // Otherwise create new user
     let user;
     if (existingUser) {
+        // Update existing user with name and password if provided
+        if (name || password) {
+            const updateData = {};
+            if (name) {
+                updateData.profile = {
+                    ...(existingUser.profile || {}),
+                    name: name.trim()
+                };
+            }
+            if (password) {
+                updateData.password = password;
+            }
+            await userRepository.updateById(existingUser._id, updateData);
+        }
         // Resend OTP for unverified user
         await otpService.generateAndSendOTP(mobile);
         user = await userRepository.findByMobile(mobile);
     } else {
         // Create new user
-        user = await userRepository.create({
-            mobile,
-            isVerified: false
-        });
+        user = await userRepository.create(userData);
 
         // Generate and send OTP
         await otpService.generateAndSendOTP(mobile);

@@ -11,8 +11,8 @@ const authService = require('../services/authService');
  */
 exports.register = async (req, res, next) => {
     try {
-        const { mobile } = req.body;
-        const result = await authService.register(mobile);
+        const { mobile, name, password } = req.body;
+        const result = await authService.register(mobile, name, password);
         res.status(201).json({
             success: true,
             message: result.message,
