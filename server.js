@@ -29,6 +29,7 @@ const cartRoutes = require('./routes/cart');
 const orderRoutes = require('./routes/order');
 const couponRoutes = require('./routes/coupon');
 const paymentRoutes = require('./routes/payment');
+const eBookRoutes = require('./routes/ebook');
 
 // ==================== Middleware Setup ====================
 
@@ -106,6 +107,8 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/coupons', couponRoutes);
 // Payment routes (Part 10)
 app.use('/api/payments', paymentRoutes);
+// eBook routes (Part 11)
+app.use('/api/ebooks', eBookRoutes);
 
 // ==================== Error Handling ====================
 

@@ -11,15 +11,17 @@ Welcome to the eBook Backend API documentation. All project documentation is org
 - [Part 4: User Model & Schema](./PART4_DOCUMENTATION.md) - Complete user model, address management, profile management, password management
 - [Part 6: Authentication Routes & Controllers](./PART6_DOCUMENTATION.md) - Mobile-based registration, OTP authentication, passwordless login, JWT token generation
 
-### Coming Soon
+### Core Features
 - [Part 5: OTP Service (SMS Integration)](./PART5_DOCUMENTATION.md) - SMS API integration, multiple provider support, OTP delivery
 - [Part 7: Product Management](./PART7_DOCUMENTATION.md) - Product model, category management, physical + digital products, search and filtering
 - [Part 8: Cart & Order System](./PART8_DOCUMENTATION.md) - Cart management, order creation, stock management, order tracking
 - [Part 9: Coupon/Promo Code System](./PART9_DOCUMENTATION.md) - Coupon management, discount calculation, usage tracking, cart integration
 - [Part 10: Payment Gateway Integration](./PART10_DOCUMENTATION.md) - SSLCommerz, bKash, Nagad integration, payment webhooks, payment verification
-- Part 4: User Model & Schema
-- Part 5: OTP Service
-- Part 6: Authentication Routes & Controllers
+- [Part 11: eBook Security System](./PART11_DOCUMENTATION.md) - IP restriction, device fingerprinting, PDF watermarking, secure PDF serving
+
+### Coming Soon
+- Part 12: Affiliate Program - Referral system, commission tracking, withdraw system
+- Part 13: Admin Panel - Complete admin dashboard and management features
 - ... (More documentation will be added as development progresses)
 
 ## 🚀 Quick Start

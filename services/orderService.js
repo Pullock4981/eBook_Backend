@@ -278,7 +278,7 @@ const updateOrderStatus = async (orderId, status) => {
  * @param {String} transactionId - Payment transaction ID
  * @returns {Promise<Object>} - Updated order
  */
-const updatePaymentStatus = async (orderId, paymentStatus, transactionId = null) => {
+const updatePaymentStatus = async (orderId, paymentStatus, transactionId = null, req = null) => {
     if (!orderId || orderId.length !== 24) {
         throw new Error('Invalid order ID format');
     }
@@ -293,9 +293,18 @@ const updatePaymentStatus = async (orderId, paymentStatus, transactionId = null)
         throw new Error('Order not found');
     }
 
-    // If payment successful, update order status
+    // If payment successful, update order status and create eBook access
     if (paymentStatus === 'paid' && order.paymentStatus !== 'paid') {
         await orderRepository.updateStatus(orderId, 'confirmed');
+
+        // Create eBook access for digital products (lazy load to avoid circular dependency)
+        try {
+            const eBookService = require('./eBookService');
+            await eBookService.createAccessForOrder(orderId, req);
+        } catch (error) {
+            // Log error but don't fail payment update
+            console.error('Failed to create eBook access:', error.message);
+        }
     }
 
     return await orderRepository.updatePaymentStatus(orderId, paymentStatus, transactionId);

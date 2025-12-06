@@ -266,7 +266,9 @@ const initiatePayment = async (orderId, paymentMethod) => {
 
         case PAYMENT_GATEWAYS.CASH_ON_DELIVERY:
             // For cash on delivery, just update order status directly
-            await orderRepository.updatePaymentStatus(orderId, 'paid', 'CASH_ON_DELIVERY');
+            // Import orderService here to avoid circular dependency
+            const orderService = require('./orderService');
+            await orderService.updatePaymentStatus(orderId, 'paid', 'CASH_ON_DELIVERY', null);
             // Update order status to confirmed
             await orderRepository.updateStatus(orderId, 'confirmed');
             return {
@@ -322,8 +324,9 @@ const verifySSLCommerzPayment = async (paymentData) => {
                 throw new Error('Payment amount mismatch');
             }
 
-            // Update order payment status
-            await orderRepository.updatePaymentStatus(order._id, 'paid', val_id);
+            // Update order payment status (with req for IP/device tracking)
+            const orderService = require('./orderService');
+            await orderService.updatePaymentStatus(order._id, 'paid', val_id, null);
             // Update order status to confirmed
             await orderRepository.updateStatus(order._id, 'confirmed');
 
