@@ -15,6 +15,7 @@ Welcome to the eBook Backend API documentation. All project documentation is org
 - [Part 5: OTP Service (SMS Integration)](./PART5_DOCUMENTATION.md) - SMS API integration, multiple provider support, OTP delivery
 - [Part 7: Product Management](./PART7_DOCUMENTATION.md) - Product model, category management, physical + digital products, search and filtering
 - [Part 8: Cart & Order System](./PART8_DOCUMENTATION.md) - Cart management, order creation, stock management, order tracking
+- [Part 9: Coupon/Promo Code System](./PART9_DOCUMENTATION.md) - Coupon management, discount calculation, usage tracking, cart integration
 - Part 4: User Model & Schema
 - Part 5: OTP Service
 - Part 6: Authentication Routes & Controllers

@@ -1,0 +1,229 @@
+/**
+ * Coupon Service
+ * Business logic layer for Coupon operations
+ */
+
+const couponRepository = require('../repositories/couponRepository');
+
+/**
+ * Create a new coupon
+ * @param {Object} couponData - Coupon data
+ * @returns {Promise<Object>} - Created coupon
+ */
+const createCoupon = async (couponData) => {
+    // Validate coupon code uniqueness
+    const existing = await couponRepository.findByCode(couponData.code);
+    if (existing) {
+        throw new Error('Coupon code already exists');
+    }
+
+    // Validate coupon value
+    if (couponData.type === 'percentage' && couponData.value > 100) {
+        throw new Error('Percentage discount cannot exceed 100%');
+    }
+
+    if (couponData.type === 'percentage' && couponData.value < 0) {
+        throw new Error('Percentage discount cannot be negative');
+    }
+
+    if (couponData.type === 'fixed' && couponData.value <= 0) {
+        throw new Error('Fixed discount must be greater than 0');
+    }
+
+    // Validate max discount for percentage
+    if (couponData.type === 'percentage' && couponData.maxDiscount) {
+        if (couponData.maxDiscount <= 0) {
+            throw new Error('Max discount must be greater than 0');
+        }
+    }
+
+    // Validate expiry date
+    if (couponData.expiryDate && new Date(couponData.expiryDate) < new Date()) {
+        throw new Error('Expiry date cannot be in the past');
+    }
+
+    // Create coupon
+    const coupon = await couponRepository.create(couponData);
+    return coupon;
+};
+
+/**
+ * Get all coupons
+ * @param {Object} filters - Filter options
+ * @param {Number} page - Page number
+ * @param {Number} limit - Items per page
+ * @returns {Promise<Object>} - Coupons with pagination
+ */
+const getAllCoupons = async (filters = {}, page = 1, limit = 10) => {
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 10));
+
+    return await couponRepository.getAll(filters, pageNum, limitNum);
+};
+
+/**
+ * Get coupon by ID
+ * @param {String} id - Coupon ID
+ * @returns {Promise<Object>} - Coupon document
+ */
+const getCouponById = async (id) => {
+    if (!id || id.length !== 24) {
+        throw new Error('Invalid coupon ID format');
+    }
+
+    const coupon = await couponRepository.findById(id);
+    if (!coupon) {
+        throw new Error('Coupon not found');
+    }
+
+    return coupon;
+};
+
+/**
+ * Get coupon by code
+ * @param {String} code - Coupon code
+ * @returns {Promise<Object>} - Coupon document
+ */
+const getCouponByCode = async (code) => {
+    if (!code || code.trim().length === 0) {
+        throw new Error('Coupon code is required');
+    }
+
+    const coupon = await couponRepository.findByCode(code);
+    if (!coupon) {
+        throw new Error('Coupon not found');
+    }
+
+    return coupon;
+};
+
+/**
+ * Validate coupon for use
+ * @param {String} code - Coupon code
+ * @param {Number} cartAmount - Cart subtotal amount
+ * @returns {Promise<Object>} - Validation result with coupon
+ */
+const validateCoupon = async (code, cartAmount) => {
+    if (!code || code.trim().length === 0) {
+        throw new Error('Coupon code is required');
+    }
+
+    if (!cartAmount || cartAmount < 0) {
+        throw new Error('Invalid cart amount');
+    }
+
+    // Get coupon
+    const coupon = await couponRepository.findByCode(code);
+    if (!coupon) {
+        throw new Error('Invalid coupon code');
+    }
+
+    // Check if coupon is valid
+    const validityCheck = coupon.isValid();
+    if (!validityCheck.valid) {
+        throw new Error(validityCheck.reason);
+    }
+
+    // Check if can apply to amount
+    const amountCheck = coupon.canApplyToAmount(cartAmount);
+    if (!amountCheck.canApply) {
+        throw new Error(amountCheck.reason);
+    }
+
+    return coupon;
+};
+
+/**
+ * Calculate discount for cart
+ * @param {String} code - Coupon code
+ * @param {Number} cartAmount - Cart subtotal
+ * @returns {Promise<Object>} - Discount calculation result
+ */
+const calculateDiscount = async (code, cartAmount) => {
+    const coupon = await validateCoupon(code, cartAmount);
+    const discount = coupon.calculateDiscount(cartAmount);
+
+    return {
+        coupon,
+        discount,
+        finalAmount: cartAmount - discount
+    };
+};
+
+/**
+ * Update coupon
+ * @param {String} id - Coupon ID
+ * @param {Object} couponData - Update data
+ * @returns {Promise<Object>} - Updated coupon
+ */
+const updateCoupon = async (id, couponData) => {
+    if (!id || id.length !== 24) {
+        throw new Error('Invalid coupon ID format');
+    }
+
+    const existing = await couponRepository.findById(id);
+    if (!existing) {
+        throw new Error('Coupon not found');
+    }
+
+    // Validate code uniqueness if changing code
+    if (couponData.code && couponData.code !== existing.code) {
+        const codeExists = await couponRepository.findByCode(couponData.code);
+        if (codeExists) {
+            throw new Error('Coupon code already exists');
+        }
+    }
+
+    // Validate value
+    if (couponData.type === 'percentage' && couponData.value > 100) {
+        throw new Error('Percentage discount cannot exceed 100%');
+    }
+
+    const updated = await couponRepository.updateById(id, couponData);
+    return updated;
+};
+
+/**
+ * Delete coupon (soft delete)
+ * @param {String} id - Coupon ID
+ * @returns {Promise<Object>} - Deleted coupon
+ */
+const deleteCoupon = async (id) => {
+    if (!id || id.length !== 24) {
+        throw new Error('Invalid coupon ID format');
+    }
+
+    const existing = await couponRepository.findById(id);
+    if (!existing) {
+        throw new Error('Coupon not found');
+    }
+
+    const deleted = await couponRepository.deleteById(id);
+    return deleted;
+};
+
+/**
+ * Increment coupon usage
+ * @param {String} id - Coupon ID
+ * @returns {Promise<Object>} - Updated coupon
+ */
+const incrementCouponUsage = async (id) => {
+    if (!id || id.length !== 24) {
+        throw new Error('Invalid coupon ID format');
+    }
+
+    return await couponRepository.incrementUsage(id);
+};
+
+module.exports = {
+    createCoupon,
+    getAllCoupons,
+    getCouponById,
+    getCouponByCode,
+    validateCoupon,
+    calculateDiscount,
+    updateCoupon,
+    deleteCoupon,
+    incrementCouponUsage
+};
+

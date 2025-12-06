@@ -7,7 +7,7 @@ const orderRepository = require('../repositories/orderRepository');
 const cartRepository = require('../repositories/cartRepository');
 const productRepository = require('../repositories/productRepository');
 const addressRepository = require('../repositories/addressRepository');
-const couponRepository = require('../repositories/couponRepository');
+const couponService = require('./couponService');
 
 /**
  * Create order from cart
@@ -109,14 +109,16 @@ const createOrder = async (userId, orderData) => {
 
     if (cart.coupon) {
         try {
-            const coupon = await couponRepository.findById(cart.coupon._id || cart.coupon);
+            const coupon = await couponService.getCouponById(cart.coupon._id || cart.coupon);
             if (coupon) {
                 couponId = coupon._id;
                 couponCode = coupon.code;
                 // Discount already calculated in cart
+                // Increment coupon usage
+                await couponService.incrementCouponUsage(couponId);
             }
         } catch (error) {
-            // Coupon not found or not implemented yet - ignore
+            // Coupon not found - ignore
             discount = 0;
         }
     }

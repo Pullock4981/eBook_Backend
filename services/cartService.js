@@ -5,7 +5,7 @@
 
 const cartRepository = require('../repositories/cartRepository');
 const productRepository = require('../repositories/productRepository');
-const couponRepository = require('../repositories/couponRepository');
+const couponService = require('./couponService');
 
 /**
  * Get user's cart
@@ -80,10 +80,9 @@ const addToCart = async (userId, productId, quantity) => {
     await cart.save();
 
     // Apply coupon discount if coupon exists
-    // Note: Coupon functionality will be fully implemented in Part 9
-    // if (cart.coupon) {
-    //   await applyCouponDiscount(userId, cart.coupon);
-    // }
+    if (cart.coupon) {
+        await applyCouponDiscount(userId, cart.coupon._id || cart.coupon);
+    }
 
     return await cartRepository.findByUser(userId);
 };
@@ -166,10 +165,9 @@ const removeFromCart = async (userId, productId) => {
     await cart.save();
 
     // Reapply coupon if exists
-    // Note: Coupon functionality will be fully implemented in Part 9
-    // if (cart.coupon) {
-    //   await applyCouponDiscount(userId, cart.coupon);
-    // }
+    if (cart.coupon) {
+        await applyCouponDiscount(userId, cart.coupon._id || cart.coupon);
+    }
 
     return await cartRepository.findByUser(userId);
 };
@@ -207,30 +205,13 @@ const applyCoupon = async (userId, couponCode) => {
         throw new Error('Cart is empty');
     }
 
-    // Find coupon
-    const coupon = await couponRepository.findByCode(couponCode.toUpperCase());
-    if (!coupon) {
-        throw new Error('Invalid coupon code');
-    }
-    if (!coupon.isActive) {
-        throw new Error('Coupon is not active');
-    }
-    if (coupon.expiryDate && new Date() > coupon.expiryDate) {
-        throw new Error('Coupon has expired');
-    }
-    if (coupon.usedCount >= coupon.usageLimit) {
-        throw new Error('Coupon usage limit reached');
-    }
+    // Validate coupon using coupon service
+    const coupon = await couponService.validateCoupon(couponCode, cart.subtotal);
 
-    // Check minimum purchase
-    if (coupon.minPurchase && cart.subtotal < coupon.minPurchase) {
-        throw new Error(`Minimum purchase of ${coupon.minPurchase} required`);
-    }
-
-    // Apply coupon
+    // Apply coupon to cart
     await cartRepository.applyCoupon(userId, coupon._id);
 
-    // Calculate discount
+    // Calculate and apply discount
     await applyCouponDiscount(userId, coupon._id);
 
     return await cartRepository.findByUser(userId);
@@ -248,24 +229,13 @@ const applyCouponDiscount = async (userId, couponId) => {
         throw new Error('Cart not found');
     }
 
-    const coupon = await couponRepository.findById(couponId);
+    const coupon = await couponService.getCouponById(couponId);
     if (!coupon) {
         throw new Error('Coupon not found');
     }
 
-    let discount = 0;
-
-    if (coupon.type === 'percentage') {
-        discount = (cart.subtotal * coupon.value) / 100;
-        if (coupon.maxDiscount && discount > coupon.maxDiscount) {
-            discount = coupon.maxDiscount;
-        }
-    } else if (coupon.type === 'fixed') {
-        discount = coupon.value;
-        if (discount > cart.subtotal) {
-            discount = cart.subtotal;
-        }
-    }
+    // Calculate discount using coupon method
+    const discount = coupon.calculateDiscount(cart.subtotal);
 
     cart.discount = discount;
     cart.calculateTotals();
