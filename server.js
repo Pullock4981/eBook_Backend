@@ -23,6 +23,8 @@ const { apiLimiter } = require('./middleware/rateLimiter');
 const testRoutes = require('./routes/test');
 const userRoutes = require('./routes/user');
 const authRoutes = require('./routes/auth');
+const productRoutes = require('./routes/product');
+const categoryRoutes = require('./routes/category');
 
 // ==================== Middleware Setup ====================
 
@@ -88,8 +90,11 @@ app.use('/api/auth', authRoutes);
 app.use('/api/test', testRoutes);
 // User routes (profile and address management - Part 4)
 app.use('/api/users', userRoutes);
+// Product routes (Part 7)
+app.use('/api/products', productRoutes);
+// Category routes (Part 7)
+app.use('/api/categories', categoryRoutes);
 // Routes will be added here in future parts
-// app.use('/api/products', productRoutes);
 // app.use('/api/orders', orderRoutes);
 
 // ==================== Error Handling ====================
