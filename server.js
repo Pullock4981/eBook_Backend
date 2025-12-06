@@ -25,6 +25,8 @@ const userRoutes = require('./routes/user');
 const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/product');
 const categoryRoutes = require('./routes/category');
+const cartRoutes = require('./routes/cart');
+const orderRoutes = require('./routes/order');
 
 // ==================== Middleware Setup ====================
 
@@ -94,8 +96,10 @@ app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 // Category routes (Part 7)
 app.use('/api/categories', categoryRoutes);
-// Routes will be added here in future parts
-// app.use('/api/orders', orderRoutes);
+// Cart routes (Part 8)
+app.use('/api/cart', cartRoutes);
+// Order routes (Part 8)
+app.use('/api/orders', orderRoutes);
 
 // ==================== Error Handling ====================
 
