@@ -28,6 +28,7 @@ const categoryRoutes = require('./routes/category');
 const cartRoutes = require('./routes/cart');
 const orderRoutes = require('./routes/order');
 const couponRoutes = require('./routes/coupon');
+const paymentRoutes = require('./routes/payment');
 
 // ==================== Middleware Setup ====================
 
@@ -103,6 +104,8 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 // Coupon routes (Part 9)
 app.use('/api/coupons', couponRoutes);
+// Payment routes (Part 10)
+app.use('/api/payments', paymentRoutes);
 
 // ==================== Error Handling ====================
 
