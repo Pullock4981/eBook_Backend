@@ -19,9 +19,7 @@ Welcome to the eBook Backend API documentation. All project documentation is org
 - [Part 10: Payment Gateway Integration](./PART10_DOCUMENTATION.md) - SSLCommerz, bKash, Nagad integration, payment webhooks, payment verification
 - [Part 11: eBook Security System](./PART11_DOCUMENTATION.md) - IP restriction, device fingerprinting, PDF watermarking, secure PDF serving
 - [Part 12: Affiliate Program](./PART12_DOCUMENTATION.md) - Referral system, commission tracking, withdraw system, admin approval
-
-### Coming Soon
-- Part 13: Admin Panel - Complete admin dashboard and management features
+- [Part 13: Admin Panel](./PART13_DOCUMENTATION.md) - Dashboard analytics, user management, sales analytics, revenue reporting
 - ... (More documentation will be added as development progresses)
 
 ## 🚀 Quick Start

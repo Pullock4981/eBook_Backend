@@ -32,6 +32,7 @@ const paymentRoutes = require('./routes/payment');
 const eBookRoutes = require('./routes/ebook');
 const affiliateRoutes = require('./routes/affiliate');
 const adminAffiliateRoutes = require('./routes/adminAffiliate');
+const adminDashboardRoutes = require('./routes/adminDashboard');
 
 // ==================== Middleware Setup ====================
 
@@ -115,6 +116,8 @@ app.use('/api/ebooks', eBookRoutes);
 app.use('/api/affiliates', affiliateRoutes);
 // Admin affiliate routes (Part 12)
 app.use('/api/admin', adminAffiliateRoutes);
+// Admin dashboard routes (Part 13)
+app.use('/api/admin', adminDashboardRoutes);
 
 // ==================== Error Handling ====================
 
