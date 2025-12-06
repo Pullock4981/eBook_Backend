@@ -1,11 +1,12 @@
 /**
  * OTP Service Utility
  * Handles OTP generation, validation, and SMS sending
- * Basic structure - will be expanded in Part 5 with SMS API integration
+ * Integrated with SMS service (Part 5)
  */
 
 const crypto = require('crypto');
 const userRepository = require('../repositories/userRepository');
+const smsService = require('../services/smsService');
 
 /**
  * Generate random OTP
@@ -47,30 +48,44 @@ const saveOTP = async (mobile, otp) => {
 
 /**
  * Send OTP via SMS
- * TODO: Integrate with SMS API provider in Part 5
+ * Uses SMS service to send OTP through configured provider
  * @param {String} mobile - Mobile number
  * @param {String} otp - OTP code
  * @returns {Promise<Object>} - SMS sending result
  */
 const sendOTP = async (mobile, otp) => {
-    // TODO: Integrate SMS API (Twilio, local provider, etc.)
-    // For now, just log the OTP (development only)
-    console.log(`📱 OTP for ${mobile}: ${otp}`);
-    console.log(`⏰ OTP expires in ${process.env.OTP_EXPIRY_MINUTES || 5} minutes`);
+    try {
+        // Use SMS service to send OTP
+        const result = await smsService.sendOTP(mobile, otp);
 
-    // In production, this should call SMS API
-    // Example:
-    // const axios = require('axios');
-    // return await axios.post(process.env.SMS_API_URL, {
-    //   mobile,
-    //   message: `Your OTP is: ${otp}`,
-    //   api_key: process.env.SMS_API_KEY
-    // });
+        // Log in development mode for debugging
+        if (process.env.NODE_ENV === 'development') {
+            console.log(`📱 OTP for ${mobile}: ${otp}`);
+            console.log(`⏰ OTP expires in ${process.env.OTP_EXPIRY_MINUTES || 5} minutes`);
+            if (result.provider === 'console') {
+                console.log(`⚠️ SMS API not configured. OTP logged to console.`);
+            }
+        }
 
-    return {
-        success: true,
-        message: 'OTP sent successfully (logged to console in development)'
-    };
+        return result;
+    } catch (error) {
+        // Log error
+        console.error('OTP sending failed:', error.message);
+
+        // In development, still log OTP to console
+        if (process.env.NODE_ENV === 'development') {
+            console.log(`📱 OTP for ${mobile}: ${otp} (fallback - SMS failed)`);
+            console.log(`⏰ OTP expires in ${process.env.OTP_EXPIRY_MINUTES || 5} minutes`);
+            return {
+                success: true,
+                provider: 'console',
+                message: 'OTP logged to console (SMS failed, development mode)'
+            };
+        }
+
+        // In production, throw error
+        throw new Error(`Failed to send OTP: ${error.message}`);
+    }
 };
 
 /**

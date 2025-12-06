@@ -12,7 +12,7 @@ Welcome to the eBook Backend API documentation. All project documentation is org
 - [Part 6: Authentication Routes & Controllers](./PART6_DOCUMENTATION.md) - Mobile-based registration, OTP authentication, passwordless login, JWT token generation
 
 ### Coming Soon
-- Part 5: OTP Service (SMS Integration)
+- [Part 5: OTP Service (SMS Integration)](./PART5_DOCUMENTATION.md) - SMS API integration, multiple provider support, OTP delivery
 - Part 4: User Model & Schema
 - Part 5: OTP Service
 - Part 6: Authentication Routes & Controllers
