@@ -305,6 +305,22 @@ const updatePaymentStatus = async (orderId, paymentStatus, transactionId = null,
             // Log error but don't fail payment update
             console.error('Failed to create eBook access:', error.message);
         }
+
+        // Create affiliate commission if referral code exists
+        if (order.referralCode) {
+            try {
+                const affiliateService = require('./affiliateService');
+                await affiliateService.createCommission(
+                    order.referralCode,
+                    orderId,
+                    order.user.toString(),
+                    order.total
+                );
+            } catch (error) {
+                // Log error but don't fail payment update
+                console.error('Failed to create affiliate commission:', error.message);
+            }
+        }
     }
 
     return await orderRepository.updatePaymentStatus(orderId, paymentStatus, transactionId);

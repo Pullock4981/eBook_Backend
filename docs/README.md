@@ -18,9 +18,9 @@ Welcome to the eBook Backend API documentation. All project documentation is org
 - [Part 9: Coupon/Promo Code System](./PART9_DOCUMENTATION.md) - Coupon management, discount calculation, usage tracking, cart integration
 - [Part 10: Payment Gateway Integration](./PART10_DOCUMENTATION.md) - SSLCommerz, bKash, Nagad integration, payment webhooks, payment verification
 - [Part 11: eBook Security System](./PART11_DOCUMENTATION.md) - IP restriction, device fingerprinting, PDF watermarking, secure PDF serving
+- [Part 12: Affiliate Program](./PART12_DOCUMENTATION.md) - Referral system, commission tracking, withdraw system, admin approval
 
 ### Coming Soon
-- Part 12: Affiliate Program - Referral system, commission tracking, withdraw system
 - Part 13: Admin Panel - Complete admin dashboard and management features
 - ... (More documentation will be added as development progresses)
 
