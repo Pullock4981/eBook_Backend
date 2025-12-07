@@ -58,6 +58,10 @@ const getAllCoupons = async (filters = {}, page = 1, limit = 10) => {
     const pageNum = Math.max(1, parseInt(page) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 10));
 
+    // Auto-disable expired coupons
+    const now = new Date();
+    await couponRepository.updateExpiredCoupons(now);
+
     return await couponRepository.getAll(filters, pageNum, limitNum);
 };
 

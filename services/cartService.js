@@ -254,11 +254,34 @@ const applyCoupon = async (userId, couponCode) => {
     // Validate coupon using coupon service
     const coupon = await couponService.validateCoupon(couponCode, cart.subtotal);
 
+    if (!coupon) {
+        throw new Error('Coupon validation failed');
+    }
+
+    // Ensure coupon has valid ID - Mongoose documents have _id property
+    let couponId = null;
+    if (coupon._id) {
+        // Mongoose ObjectId - convert to string
+        couponId = coupon._id.toString ? coupon._id.toString() : String(coupon._id);
+    } else if (coupon.id) {
+        // Fallback to id property
+        couponId = coupon.id.toString ? coupon.id.toString() : String(coupon.id);
+    }
+
+    if (!couponId) {
+        throw new Error('Invalid coupon: missing ID');
+    }
+
+    // Validate ObjectId format (24 hex characters)
+    if (couponId.length !== 24 || !/^[0-9a-fA-F]{24}$/.test(couponId)) {
+        throw new Error(`Invalid coupon ID format: ${couponId}`);
+    }
+
     // Apply coupon to cart
-    await cartRepository.applyCoupon(userIdStr, coupon._id);
+    await cartRepository.applyCoupon(userIdStr, couponId);
 
     // Calculate and apply discount
-    await applyCouponDiscount(userIdStr, coupon._id);
+    await applyCouponDiscount(userIdStr, couponId);
 
     return await cartRepository.findByUser(userIdStr);
 };
@@ -272,12 +295,24 @@ const applyCoupon = async (userId, couponCode) => {
 const applyCouponDiscount = async (userId, couponId) => {
     // Convert to string if it's an ObjectId
     const userIdStr = userId?.toString ? userId.toString() : String(userId);
+
+    if (!couponId) {
+        throw new Error('Coupon ID is required');
+    }
+
+    // Convert couponId to string and validate format
+    const couponIdStr = couponId?.toString ? couponId.toString() : String(couponId);
+    if (couponIdStr.length !== 24 || !/^[0-9a-fA-F]{24}$/.test(couponIdStr)) {
+        throw new Error('Invalid coupon ID format');
+    }
+
     const cart = await cartRepository.findByUser(userIdStr);
     if (!cart) {
         throw new Error('Cart not found');
     }
 
-    const coupon = await couponService.getCouponById(couponId);
+    // Get coupon by ID
+    const coupon = await couponService.getCouponById(couponIdStr);
     if (!coupon) {
         throw new Error('Coupon not found');
     }

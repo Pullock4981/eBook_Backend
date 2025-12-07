@@ -127,6 +127,23 @@ const findActive = async (limit = 5) => {
     return coupons.filter(coupon => (coupon.usedCount || 0) < coupon.usageLimit);
 };
 
+/**
+ * Auto-disable expired coupons
+ * @param {Date} now - Current date
+ * @returns {Promise<Object>} - Update result
+ */
+const updateExpiredCoupons = async (now) => {
+    return await Coupon.updateMany(
+        {
+            isActive: true,
+            expiryDate: { $exists: true, $ne: null, $lt: now }
+        },
+        {
+            $set: { isActive: false }
+        }
+    );
+};
+
 module.exports = {
     create,
     findByCode,
@@ -135,6 +152,7 @@ module.exports = {
     updateById,
     deleteById,
     incrementUsage,
-    findActive
+    findActive,
+    updateExpiredCoupons
 };
 

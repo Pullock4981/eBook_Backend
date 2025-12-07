@@ -11,31 +11,40 @@ const productService = require('../services/productService');
  */
 exports.getAllProducts = async (req, res, next) => {
     try {
-        const { page = 1, limit = 100, sortBy = 'createdAt', sortOrder = 'desc', ...filters } = req.query;
+        const { page = 1, limit = 8, sortBy = 'createdAt', sortOrder = 'desc', ...filters } = req.query;
 
         // Remove sortBy and sortOrder from filters if they exist
         const cleanFilters = { ...filters };
         delete cleanFilters.sortBy;
         delete cleanFilters.sortOrder;
 
-        // Ensure limit is at least 100 to get all products
-        const finalLimit = Math.max(parseInt(limit) || 100, 100);
+        // Default to 8 items per page
+        const finalLimit = parseInt(limit) || 8;
 
         const result = await productService.getAllProducts(cleanFilters, page, finalLimit, sortBy, sortOrder);
 
         // Ensure we have products array
         const products = Array.isArray(result.products) ? result.products : [];
-        const pagination = result.pagination || {
-            page: pageNum,
+        const backendPagination = result.pagination || {
+            page: parseInt(page) || 1,
             limit: finalLimit,
             total: products.length,
             pages: 1
         };
 
+        // Transform pagination to match frontend format
+        const pagination = {
+            currentPage: backendPagination.page || parseInt(page) || 1,
+            totalPages: backendPagination.pages || Math.ceil((backendPagination.total || products.length) / finalLimit) || 1,
+            totalItems: backendPagination.total || products.length,
+            itemsPerPage: backendPagination.limit || finalLimit
+        };
+
         // Debug log in development
         if (process.env.NODE_ENV !== 'production') {
-            console.log(`📦 Products API - Fetched ${products.length} products out of ${pagination.total}`);
+            console.log(`📦 Products API - Fetched ${products.length} products out of ${pagination.totalItems}`);
             console.log(`📦 Limit used: ${finalLimit}, Page: ${page}`);
+            console.log(`📦 Pagination:`, pagination);
             console.log(`📦 Product names:`, products.map(p => p.name));
             console.log(`📦 All product IDs:`, products.map(p => p._id));
         }
@@ -163,14 +172,30 @@ exports.deleteProduct = async (req, res, next) => {
  */
 exports.searchProducts = async (req, res, next) => {
     try {
-        const { q: searchText, page = 1, limit = 100 } = req.query;
-        const result = await productService.searchProducts(searchText, page, limit);
+        const { q: searchText, page = 1, limit = 8 } = req.query;
+        const finalLimit = parseInt(limit) || 8;
+        const result = await productService.searchProducts(searchText, page, finalLimit);
+
+        const backendPagination = result.pagination || {
+            page: parseInt(page) || 1,
+            limit: finalLimit,
+            total: result.products?.length || 0,
+            pages: 1
+        };
+
+        // Transform pagination to match frontend format
+        const pagination = {
+            currentPage: backendPagination.page || parseInt(page) || 1,
+            totalPages: backendPagination.pages || Math.ceil((backendPagination.total || 0) / finalLimit) || 1,
+            totalItems: backendPagination.total || result.products?.length || 0,
+            itemsPerPage: backendPagination.limit || finalLimit
+        };
 
         res.status(200).json({
             success: true,
             message: 'Search completed successfully',
-            data: result.products,
-            pagination: result.pagination
+            data: result.products || [],
+            pagination: pagination
         });
     } catch (error) {
         next(error);
@@ -183,14 +208,30 @@ exports.searchProducts = async (req, res, next) => {
  */
 exports.getProductsByCategory = async (req, res, next) => {
     try {
-        const { page = 1, limit = 100 } = req.query;
-        const result = await productService.getProductsByCategory(req.params.categoryId, page, limit);
+        const { page = 1, limit = 8 } = req.query;
+        const finalLimit = parseInt(limit) || 8;
+        const result = await productService.getProductsByCategory(req.params.categoryId, page, finalLimit);
+
+        const backendPagination = result.pagination || {
+            page: parseInt(page) || 1,
+            limit: finalLimit,
+            total: result.products?.length || 0,
+            pages: 1
+        };
+
+        // Transform pagination to match frontend format
+        const pagination = {
+            currentPage: backendPagination.page || parseInt(page) || 1,
+            totalPages: backendPagination.pages || Math.ceil((backendPagination.total || 0) / finalLimit) || 1,
+            totalItems: backendPagination.total || result.products?.length || 0,
+            itemsPerPage: backendPagination.limit || finalLimit
+        };
 
         res.status(200).json({
             success: true,
             message: 'Products retrieved successfully',
-            data: result.products,
-            pagination: result.pagination
+            data: result.products || [],
+            pagination: pagination
         });
     } catch (error) {
         next(error);

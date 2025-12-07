@@ -53,10 +53,10 @@ const createProduct = async (productData) => {
  * @param {String} sortOrder - Sort order
  * @returns {Promise<Object>} - Products with pagination
  */
-const getAllProducts = async (filters = {}, page = 1, limit = 100, sortBy = 'createdAt', sortOrder = 'desc') => {
+const getAllProducts = async (filters = {}, page = 1, limit = 8, sortBy = 'createdAt', sortOrder = 'desc') => {
     // Validate pagination
     const pageNum = Math.max(1, parseInt(page) || 1);
-    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 100));
+    const limitNum = Math.max(1, parseInt(limit) || 8);
 
     // Build filter object
     const filterObj = {};
@@ -254,13 +254,13 @@ const deleteProduct = async (id) => {
  * @param {Number} limit - Items per page
  * @returns {Promise<Object>} - Products with pagination
  */
-const searchProducts = async (searchText, page = 1, limit = 100) => {
+const searchProducts = async (searchText, page = 1, limit = 8) => {
     if (!searchText || searchText.trim().length === 0) {
         throw new Error('Search text is required');
     }
 
     const pageNum = Math.max(1, parseInt(page) || 1);
-    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 100));
+    const limitNum = Math.max(1, parseInt(limit) || 8);
 
     const result = await productRepository.search(searchText.trim(), pageNum, limitNum);
     return result;
@@ -273,7 +273,7 @@ const searchProducts = async (searchText, page = 1, limit = 100) => {
  * @param {Number} limit - Items per page
  * @returns {Promise<Object>} - Products with pagination
  */
-const getProductsByCategory = async (categoryId, page = 1, limit = 100) => {
+const getProductsByCategory = async (categoryId, page = 1, limit = 8) => {
     if (!categoryId || categoryId.length !== 24) {
         throw new Error('Invalid category ID format');
     }
@@ -284,7 +284,7 @@ const getProductsByCategory = async (categoryId, page = 1, limit = 100) => {
     }
 
     const pageNum = Math.max(1, parseInt(page) || 1);
-    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 100));
+    const limitNum = Math.max(1, parseInt(limit) || 8);
 
     const result = await productRepository.findByCategory(categoryId, pageNum, limitNum);
     return result;

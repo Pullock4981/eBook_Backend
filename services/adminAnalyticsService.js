@@ -25,7 +25,7 @@ const getDashboardStats = async () => {
         ] = await Promise.all([
             userRepository.getAll({}, 1, 1),
             productRepository.getAll({ includeInactive: true }, 1, 1),
-            orderRepository.findAll({}, 1, 1),
+            orderRepository.getAll({}, 1, 1),
             getTotalRevenue(),
             getRecentOrders(5),
             adminAffiliateService.getAffiliateAnalytics()
@@ -81,7 +81,7 @@ const getDashboardStats = async () => {
  */
 const getTotalRevenue = async () => {
     try {
-        const orders = await orderRepository.findAll({ paymentStatus: 'paid' }, 1, 10000);
+        const orders = await orderRepository.getAll({ paymentStatus: 'paid' }, 1, 10000);
         return orders.orders.reduce((sum, order) => sum + order.total, 0);
     } catch (error) {
         throw new Error(`Failed to get total revenue: ${error.message}`);
@@ -95,7 +95,7 @@ const getTotalRevenue = async () => {
  */
 const getRecentOrders = async (limit = 10) => {
     try {
-        const result = await orderRepository.findAll({}, 1, limit);
+        const result = await orderRepository.getAll({}, 1, limit);
         return result.orders.map(order => ({
             id: order._id,
             orderId: order.orderId,
@@ -115,7 +115,7 @@ const getRecentOrders = async (limit = 10) => {
  */
 const getOrdersByStatus = async () => {
     try {
-        const orders = await orderRepository.findAll({}, 1, 10000);
+        const orders = await orderRepository.getAll({}, 1, 10000);
         const statusCounts = {
             pending: 0,
             confirmed: 0,
@@ -145,14 +145,17 @@ const getOrdersByStatus = async () => {
 const getRevenueByPeriod = async () => {
     try {
         const now = new Date();
+        const today = new Date(now);
+        today.setHours(0, 0, 0, 0);
+
         const periods = {
-            today: new Date(now.setHours(0, 0, 0, 0)),
-            last7Days: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
-            last30Days: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
-            last90Days: new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000)
+            today: today,
+            last7Days: new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000),
+            last30Days: new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000),
+            last90Days: new Date(today.getTime() - 90 * 24 * 60 * 60 * 1000)
         };
 
-        const orders = await orderRepository.findAll({ paymentStatus: 'paid' }, 1, 10000);
+        const orders = await orderRepository.getAll({ paymentStatus: 'paid' }, 1, 10000);
 
         const revenue = {
             today: 0,
@@ -192,13 +195,14 @@ const getRevenueByPeriod = async () => {
  */
 const getTopProducts = async (limit = 10) => {
     try {
-        const orders = await orderRepository.findAll({ paymentStatus: 'paid' }, 1, 10000);
+        const orders = await orderRepository.getAll({ paymentStatus: 'paid' }, 1, 10000);
 
         // Count product sales
         const productSales = {};
         orders.orders.forEach(order => {
             order.items.forEach(item => {
-                const productId = item.product.toString();
+                // Handle both populated object and ObjectId
+                const productId = item.product?._id ? item.product._id.toString() : item.product.toString();
                 if (!productSales[productId]) {
                     productSales[productId] = {
                         productId,
@@ -245,7 +249,7 @@ const getTopProducts = async (limit = 10) => {
  */
 const getSalesTrends = async () => {
     try {
-        const orders = await orderRepository.findAll({ paymentStatus: 'paid' }, 1, 10000);
+        const orders = await orderRepository.getAll({ paymentStatus: 'paid' }, 1, 10000);
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
