@@ -11,14 +11,40 @@ const productService = require('../services/productService');
  */
 exports.getAllProducts = async (req, res, next) => {
     try {
-        const { page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc', ...filters } = req.query;
-        const result = await productService.getAllProducts(filters, page, limit, sortBy, sortOrder);
+        const { page = 1, limit = 100, sortBy = 'createdAt', sortOrder = 'desc', ...filters } = req.query;
+
+        // Remove sortBy and sortOrder from filters if they exist
+        const cleanFilters = { ...filters };
+        delete cleanFilters.sortBy;
+        delete cleanFilters.sortOrder;
+
+        // Ensure limit is at least 100 to get all products
+        const finalLimit = Math.max(parseInt(limit) || 100, 100);
+
+        const result = await productService.getAllProducts(cleanFilters, page, finalLimit, sortBy, sortOrder);
+
+        // Ensure we have products array
+        const products = Array.isArray(result.products) ? result.products : [];
+        const pagination = result.pagination || {
+            page: pageNum,
+            limit: finalLimit,
+            total: products.length,
+            pages: 1
+        };
+
+        // Debug log in development
+        if (process.env.NODE_ENV !== 'production') {
+            console.log(`📦 Products API - Fetched ${products.length} products out of ${pagination.total}`);
+            console.log(`📦 Limit used: ${finalLimit}, Page: ${page}`);
+            console.log(`📦 Product names:`, products.map(p => p.name));
+            console.log(`📦 All product IDs:`, products.map(p => p._id));
+        }
 
         res.status(200).json({
             success: true,
             message: 'Products retrieved successfully',
-            data: result.products,
-            pagination: result.pagination
+            data: products,
+            pagination: pagination
         });
     } catch (error) {
         next(error);
@@ -31,8 +57,21 @@ exports.getAllProducts = async (req, res, next) => {
  */
 exports.getProductById = async (req, res, next) => {
     try {
+        const productId = req.params.id;
         const incrementViews = req.query.views !== 'false'; // Default true
-        const product = await productService.getProductById(req.params.id, incrementViews);
+
+        // Debug log in development
+        if (process.env.NODE_ENV !== 'production') {
+            console.log(`📦 Controller - getProductById - ID: "${productId}" (length: ${productId.length})`);
+            console.log(`📦 Controller - getProductById - Increment views: ${incrementViews}`);
+        }
+
+        const product = await productService.getProductById(productId, incrementViews);
+
+        // Debug log in development
+        if (process.env.NODE_ENV !== 'production') {
+            console.log(`📦 Controller - getProductById - Product retrieved:`, product ? 'Yes' : 'No');
+        }
 
         res.status(200).json({
             success: true,
@@ -40,6 +79,10 @@ exports.getProductById = async (req, res, next) => {
             data: product
         });
     } catch (error) {
+        // Debug log in development
+        if (process.env.NODE_ENV !== 'production') {
+            console.error(`❌ Controller - getProductById - Error:`, error.message);
+        }
         next(error);
     }
 };
@@ -120,7 +163,7 @@ exports.deleteProduct = async (req, res, next) => {
  */
 exports.searchProducts = async (req, res, next) => {
     try {
-        const { q: searchText, page = 1, limit = 10 } = req.query;
+        const { q: searchText, page = 1, limit = 100 } = req.query;
         const result = await productService.searchProducts(searchText, page, limit);
 
         res.status(200).json({
@@ -140,7 +183,7 @@ exports.searchProducts = async (req, res, next) => {
  */
 exports.getProductsByCategory = async (req, res, next) => {
     try {
-        const { page = 1, limit = 10 } = req.query;
+        const { page = 1, limit = 100 } = req.query;
         const result = await productService.getProductsByCategory(req.params.categoryId, page, limit);
 
         res.status(200).json({

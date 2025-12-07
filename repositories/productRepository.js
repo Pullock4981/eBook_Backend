@@ -24,16 +24,21 @@ const create = async (data) => {
  * @param {String} sortOrder - Sort order (asc/desc)
  * @returns {Promise<Object>} - Products with pagination
  */
-const getAll = async (filters = {}, page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc') => {
+const getAll = async (filters = {}, page = 1, limit = 100, sortBy = 'createdAt', sortOrder = 'desc') => {
     const skip = (page - 1) * limit;
     const sort = {};
     sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
 
-    // Build query
-    const query = { ...filters };
+    // Extract includeInactive flag (not a MongoDB field)
+    // Handle both boolean and string 'true' values
+    const includeInactive = filters.includeInactive === true || filters.includeInactive === 'true';
 
-    // Only show active products by default (unless admin)
-    if (!filters.includeInactive) {
+    // Build query (exclude includeInactive from MongoDB query)
+    const query = { ...filters };
+    delete query.includeInactive;
+
+    // Only show active products by default (unless admin requests all)
+    if (!includeInactive) {
         query.isActive = true;
     }
 
@@ -46,6 +51,14 @@ const getAll = async (filters = {}, page = 1, limit = 10, sortBy = 'createdAt', 
             .limit(limit),
         Product.countDocuments(query)
     ]);
+
+    // Debug log in development
+    if (process.env.NODE_ENV !== 'production') {
+        console.log(`📦 Repository - Query:`, JSON.stringify(query, null, 2));
+        console.log(`📦 Repository - Found ${products.length} products out of ${total} total`);
+        console.log(`📦 Repository - Limit: ${limit}, Skip: ${skip}, Page: ${page}`);
+        console.log(`📦 Repository - Product names:`, products.map(p => p.name));
+    }
 
     return {
         products,
@@ -115,7 +128,7 @@ const deleteById = async (id) => {
  * @param {Number} limit - Items per page
  * @returns {Promise<Object>} - Products with pagination
  */
-const search = async (searchText, page = 1, limit = 10) => {
+const search = async (searchText, page = 1, limit = 100) => {
     const skip = (page - 1) * limit;
 
     const [products, total] = await Promise.all([
@@ -152,7 +165,7 @@ const search = async (searchText, page = 1, limit = 10) => {
  * @param {Number} limit - Items per page
  * @returns {Promise<Object>} - Products with pagination
  */
-const findByCategory = async (categoryId, page = 1, limit = 10) => {
+const findByCategory = async (categoryId, page = 1, limit = 100) => {
     const skip = (page - 1) * limit;
 
     const [products, total] = await Promise.all([

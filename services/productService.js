@@ -53,10 +53,10 @@ const createProduct = async (productData) => {
  * @param {String} sortOrder - Sort order
  * @returns {Promise<Object>} - Products with pagination
  */
-const getAllProducts = async (filters = {}, page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc') => {
+const getAllProducts = async (filters = {}, page = 1, limit = 100, sortBy = 'createdAt', sortOrder = 'desc') => {
     // Validate pagination
     const pageNum = Math.max(1, parseInt(page) || 1);
-    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 10));
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 100));
 
     // Build filter object
     const filterObj = {};
@@ -86,10 +86,16 @@ const getAllProducts = async (filters = {}, page = 1, limit = 10, sortBy = 'crea
     }
 
     if (filters.isFeatured !== undefined) {
-        filterObj.isFeatured = filters.isFeatured === 'true';
+        // Handle both boolean and string values
+        if (filters.isFeatured === true || filters.isFeatured === 'true') {
+            filterObj.isFeatured = true;
+        } else if (filters.isFeatured === false || filters.isFeatured === 'false') {
+            filterObj.isFeatured = false;
+        }
     }
 
-    if (filters.includeInactive) {
+    // Handle includeInactive flag (for admin to see all products)
+    if (filters.includeInactive === true || filters.includeInactive === 'true') {
         filterObj.includeInactive = true;
     }
 
@@ -104,11 +110,38 @@ const getAllProducts = async (filters = {}, page = 1, limit = 10, sortBy = 'crea
  * @returns {Promise<Object>} - Product document
  */
 const getProductById = async (id, incrementViews = false) => {
-    if (!id || id.length !== 24) {
+    if (!id) {
+        throw new Error('Product ID is required');
+    }
+
+    // Convert to string and trim whitespace
+    const productId = String(id).trim();
+
+    // Check if it's a valid MongoDB ObjectId (24 hex characters)
+    const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(productId);
+    if (!isValidObjectId) {
+        // Log for debugging
+        if (process.env.NODE_ENV !== 'production') {
+            console.log(`⚠️ Invalid product ID format: "${productId}" (length: ${productId.length})`);
+        }
         throw new Error('Invalid product ID format');
     }
 
-    const product = await productRepository.findById(id);
+    // Debug log in development
+    if (process.env.NODE_ENV !== 'production') {
+        console.log(`🔍 Service - getProductById - ID: "${productId}" (length: ${productId.length})`);
+    }
+
+    const product = await productRepository.findById(productId);
+
+    // Debug log in development
+    if (process.env.NODE_ENV !== 'production') {
+        console.log(`🔍 Service - getProductById - Product found:`, product ? 'Yes' : 'No');
+        if (product) {
+            console.log(`🔍 Service - getProductById - Product name:`, product.name);
+            console.log(`🔍 Service - getProductById - Product isActive:`, product.isActive);
+        }
+    }
 
     if (!product) {
         throw new Error('Product not found');
@@ -221,13 +254,13 @@ const deleteProduct = async (id) => {
  * @param {Number} limit - Items per page
  * @returns {Promise<Object>} - Products with pagination
  */
-const searchProducts = async (searchText, page = 1, limit = 10) => {
+const searchProducts = async (searchText, page = 1, limit = 100) => {
     if (!searchText || searchText.trim().length === 0) {
         throw new Error('Search text is required');
     }
 
     const pageNum = Math.max(1, parseInt(page) || 1);
-    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 10));
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 100));
 
     const result = await productRepository.search(searchText.trim(), pageNum, limitNum);
     return result;
@@ -240,7 +273,7 @@ const searchProducts = async (searchText, page = 1, limit = 10) => {
  * @param {Number} limit - Items per page
  * @returns {Promise<Object>} - Products with pagination
  */
-const getProductsByCategory = async (categoryId, page = 1, limit = 10) => {
+const getProductsByCategory = async (categoryId, page = 1, limit = 100) => {
     if (!categoryId || categoryId.length !== 24) {
         throw new Error('Invalid category ID format');
     }
@@ -251,7 +284,7 @@ const getProductsByCategory = async (categoryId, page = 1, limit = 10) => {
     }
 
     const pageNum = Math.max(1, parseInt(page) || 1);
-    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 10));
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 100));
 
     const result = await productRepository.findByCategory(categoryId, pageNum, limitNum);
     return result;

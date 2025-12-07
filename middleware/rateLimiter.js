@@ -7,17 +7,27 @@ const rateLimit = require('express-rate-limit');
 
 /**
  * General API rate limiter
- * 100 requests per 15 minutes per IP
+ * Higher limit for development, lower for production
  */
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per windowMs
+    max: process.env.NODE_ENV === 'production' ? 100 : 10000, // Very high limit for development
     message: {
         success: false,
         message: 'Too many requests from this IP, please try again later.'
     },
     standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    skip: (req) => {
+        // Skip rate limiting for localhost in development
+        if (process.env.NODE_ENV !== 'production') {
+            const ip = req.ip || req.connection?.remoteAddress || req.socket?.remoteAddress;
+            return ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1' || ip?.includes('127.0.0.1');
+        }
+        return false;
+    },
+    // Use memory store (default) - will reset on server restart
+    store: undefined
 });
 
 /**
