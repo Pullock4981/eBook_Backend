@@ -16,13 +16,16 @@ const couponService = require('./couponService');
  * @returns {Promise<Object>} - Created order
  */
 const createOrder = async (userId, orderData) => {
+    // Convert to string if it's an ObjectId
+    const userIdStr = userId?.toString ? userId.toString() : String(userId);
+
     // Validate user ID
-    if (!userId || userId.length !== 24) {
+    if (!userIdStr || userIdStr.length !== 24) {
         throw new Error('Invalid user ID format');
     }
 
     // Get cart
-    const cart = await cartRepository.findByUser(userId);
+    const cart = await cartRepository.findByUser(userIdStr);
     if (!cart || cart.items.length === 0) {
         throw new Error('Cart is empty');
     }
@@ -43,7 +46,7 @@ const createOrder = async (userId, orderData) => {
         if (!address) {
             throw new Error('Shipping address not found');
         }
-        if (address.user.toString() !== userId) {
+        if (address.user.toString() !== userIdStr) {
             throw new Error('Shipping address does not belong to this user');
         }
     }
@@ -128,7 +131,7 @@ const createOrder = async (userId, orderData) => {
 
     // Create order
     const order = await orderRepository.create({
-        user: userId,
+        user: userIdStr,
         items: orderItems,
         subtotal,
         discount,
@@ -153,7 +156,7 @@ const createOrder = async (userId, orderData) => {
     }
 
     // Clear cart after order creation
-    await cartRepository.clearCart(userId);
+    await cartRepository.clearCart(userIdStr);
 
     return await orderRepository.findById(order._id);
 };
@@ -175,8 +178,11 @@ const getOrderById = async (orderId, userId = null) => {
     }
 
     // Check if user is authorized (user can only see their own orders unless admin)
-    if (userId && order.user._id.toString() !== userId) {
-        throw new Error('Unauthorized access to this order');
+    if (userId) {
+        const userIdStr = userId?.toString ? userId.toString() : String(userId);
+        if (order.user._id.toString() !== userIdStr) {
+            throw new Error('Unauthorized access to this order');
+        }
     }
 
     return order;
@@ -199,8 +205,11 @@ const getOrderByOrderId = async (orderIdString, userId = null) => {
     }
 
     // Check if user is authorized
-    if (userId && order.user._id.toString() !== userId) {
-        throw new Error('Unauthorized access to this order');
+    if (userId) {
+        const userIdStr = userId?.toString ? userId.toString() : String(userId);
+        if (order.user._id.toString() !== userIdStr) {
+            throw new Error('Unauthorized access to this order');
+        }
     }
 
     return order;
@@ -214,14 +223,17 @@ const getOrderByOrderId = async (orderIdString, userId = null) => {
  * @returns {Promise<Object>} - Orders with pagination
  */
 const getUserOrders = async (userId, page = 1, limit = 10) => {
-    if (!userId || userId.length !== 24) {
+    // Convert to string if it's an ObjectId
+    const userIdStr = userId?.toString ? userId.toString() : String(userId);
+
+    if (!userIdStr || userIdStr.length !== 24) {
         throw new Error('Invalid user ID format');
     }
 
     const pageNum = Math.max(1, parseInt(page) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 10));
 
-    return await orderRepository.findByUser(userId, pageNum, limitNum);
+    return await orderRepository.findByUser(userIdStr, pageNum, limitNum);
 };
 
 /**

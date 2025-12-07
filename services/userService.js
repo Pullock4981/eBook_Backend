@@ -203,11 +203,14 @@ const setPassword = async (userId, password) => {
  * @returns {Promise<Array>} - Array of addresses
  */
 const getUserAddresses = async (userId) => {
-    if (!userId || userId.length !== 24) {
+    // Convert to string if it's an ObjectId
+    const userIdStr = userId?.toString ? userId.toString() : String(userId);
+
+    if (!userIdStr || userIdStr.length !== 24) {
         throw new Error('Invalid user ID format');
     }
 
-    const addresses = await addressRepository.findByUser(userId);
+    const addresses = await addressRepository.findByUser(userIdStr);
     return addresses;
 };
 
@@ -218,12 +221,15 @@ const getUserAddresses = async (userId) => {
  * @returns {Promise<Object>} - Created address
  */
 const createAddress = async (userId, addressData) => {
-    if (!userId || userId.length !== 24) {
+    // Convert to string if it's an ObjectId
+    const userIdStr = userId?.toString ? userId.toString() : String(userId);
+
+    if (!userIdStr || userIdStr.length !== 24) {
         throw new Error('Invalid user ID format');
     }
 
     // Check if user exists
-    const user = await userRepository.findById(userId);
+    const user = await userRepository.findById(userIdStr);
     if (!user) {
         throw new Error('User not found');
     }
@@ -231,11 +237,11 @@ const createAddress = async (userId, addressData) => {
     // Create address
     const address = await addressRepository.create({
         ...addressData,
-        user: userId
+        user: userIdStr
     });
 
     // Add address reference to user
-    await userRepository.addAddress(userId, address._id);
+    await userRepository.addAddress(userIdStr, address._id);
 
     return address;
 };
@@ -248,22 +254,26 @@ const createAddress = async (userId, addressData) => {
  * @returns {Promise<Object>} - Updated address
  */
 const updateAddress = async (userId, addressId, addressData) => {
-    if (!userId || userId.length !== 24 || !addressId || addressId.length !== 24) {
+    // Convert to string if it's an ObjectId
+    const userIdStr = userId?.toString ? userId.toString() : String(userId);
+    const addressIdStr = addressId?.toString ? addressId.toString() : String(addressId);
+
+    if (!userIdStr || userIdStr.length !== 24 || !addressIdStr || addressIdStr.length !== 24) {
         throw new Error('Invalid ID format');
     }
 
     // Check if address exists and belongs to user
-    const address = await addressRepository.findById(addressId);
+    const address = await addressRepository.findById(addressIdStr);
     if (!address) {
         throw new Error('Address not found');
     }
 
-    if (address.user.toString() !== userId) {
+    if (address.user.toString() !== userIdStr) {
         throw new Error('Address does not belong to this user');
     }
 
     // Update address
-    const updatedAddress = await addressRepository.updateById(addressId, addressData);
+    const updatedAddress = await addressRepository.updateById(addressIdStr, addressData);
     return updatedAddress;
 };
 
@@ -274,25 +284,29 @@ const updateAddress = async (userId, addressId, addressData) => {
  * @returns {Promise<Object>} - Success message
  */
 const deleteAddress = async (userId, addressId) => {
-    if (!userId || userId.length !== 24 || !addressId || addressId.length !== 24) {
+    // Convert to string if it's an ObjectId
+    const userIdStr = userId?.toString ? userId.toString() : String(userId);
+    const addressIdStr = addressId?.toString ? addressId.toString() : String(addressId);
+
+    if (!userIdStr || userIdStr.length !== 24 || !addressIdStr || addressIdStr.length !== 24) {
         throw new Error('Invalid ID format');
     }
 
     // Check if address exists and belongs to user
-    const address = await addressRepository.findById(addressId);
+    const address = await addressRepository.findById(addressIdStr);
     if (!address) {
         throw new Error('Address not found');
     }
 
-    if (address.user.toString() !== userId) {
+    if (address.user.toString() !== userIdStr) {
         throw new Error('Address does not belong to this user');
     }
 
     // Soft delete address
-    await addressRepository.deleteById(addressId);
+    await addressRepository.deleteById(addressIdStr);
 
     // Remove address reference from user
-    await userRepository.removeAddress(userId, addressId);
+    await userRepository.removeAddress(userIdStr, addressIdStr);
 
     return { message: 'Address deleted successfully' };
 };
@@ -304,22 +318,26 @@ const deleteAddress = async (userId, addressId) => {
  * @returns {Promise<Object>} - Updated address
  */
 const setDefaultAddress = async (userId, addressId) => {
-    if (!userId || userId.length !== 24 || !addressId || addressId.length !== 24) {
+    // Convert to string if it's an ObjectId
+    const userIdStr = userId?.toString ? userId.toString() : String(userId);
+    const addressIdStr = addressId?.toString ? addressId.toString() : String(addressId);
+
+    if (!userIdStr || userIdStr.length !== 24 || !addressIdStr || addressIdStr.length !== 24) {
         throw new Error('Invalid ID format');
     }
 
     // Check if address exists and belongs to user
-    const address = await addressRepository.findById(addressId);
+    const address = await addressRepository.findById(addressIdStr);
     if (!address) {
         throw new Error('Address not found');
     }
 
-    if (address.user.toString() !== userId) {
+    if (address.user.toString() !== userIdStr) {
         throw new Error('Address does not belong to this user');
     }
 
     // Set as default
-    const updatedAddress = await addressRepository.setAsDefault(addressId);
+    const updatedAddress = await addressRepository.setAsDefault(addressIdStr);
     return updatedAddress;
 };
 
