@@ -215,6 +215,33 @@ const incrementCouponUsage = async (id) => {
     return await couponRepository.incrementUsage(id);
 };
 
+/**
+ * Get active coupons for public display
+ * @param {Number} limit - Maximum number of coupons to return
+ * @returns {Promise<Object>} - Active coupons
+ */
+const getActiveCoupons = async (limit = 5) => {
+    const now = new Date();
+    const coupons = await couponRepository.findActive(limit);
+
+    // Filter out expired coupons and those that reached usage limit
+    const validCoupons = coupons.filter(coupon => {
+        // Check if expired
+        if (coupon.expiryDate && new Date(coupon.expiryDate) < now) {
+            return false;
+        }
+        // Check if usage limit reached
+        if (coupon.usedCount >= coupon.usageLimit) {
+            return false;
+        }
+        return true;
+    });
+
+    return {
+        coupons: validCoupons
+    };
+};
+
 module.exports = {
     createCoupon,
     getAllCoupons,
@@ -224,6 +251,7 @@ module.exports = {
     calculateDiscount,
     updateCoupon,
     deleteCoupon,
-    incrementCouponUsage
+    incrementCouponUsage,
+    getActiveCoupons
 };
 

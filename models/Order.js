@@ -27,11 +27,10 @@ const orderItemSchema = new mongoose.Schema({
         required: true
     },
     // Store product details at time of order (for history)
+    // Stored as JSON string to preserve exact snapshot
     productSnapshot: {
-        name: String,
         type: String,
-        thumbnail: String,
-        digitalFile: String
+        default: null
     }
 }, { _id: false });
 

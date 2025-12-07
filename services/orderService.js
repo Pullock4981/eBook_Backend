@@ -91,17 +91,20 @@ const createOrder = async (userId, orderData) => {
             shipping += 50; // Default shipping per item
         }
 
+        // Prepare productSnapshot as JSON string
+        const productSnapshot = JSON.stringify({
+            name: product.name || '',
+            type: product.type || '',
+            thumbnail: (product.thumbnail || (product.images && product.images[0]) || null) || null,
+            digitalFile: product.digitalFile || null
+        });
+
         orderItems.push({
             product: product._id,
             quantity: cartItem.quantity,
             price: itemPrice,
             type: product.type,
-            productSnapshot: {
-                name: product.name,
-                type: product.type,
-                thumbnail: product.thumbnail || (product.images && product.images[0]) || null,
-                digitalFile: product.digitalFile || null
-            }
+            productSnapshot: productSnapshot
         });
     }
 
@@ -129,8 +132,15 @@ const createOrder = async (userId, orderData) => {
     // Calculate total
     const total = subtotal - discount + shipping;
 
+    // Generate order ID before creating
+    const date = new Date();
+    const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '');
+    const random = Math.floor(100000 + Math.random() * 900000);
+    const orderId = `ORD-${dateStr}-${random}`.toUpperCase();
+
     // Create order
     const order = await orderRepository.create({
+        orderId, // Explicitly set orderId to avoid validation error
         user: userIdStr,
         items: orderItems,
         subtotal,

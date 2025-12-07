@@ -8,8 +8,8 @@ const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const cloudinary = require('../utils/cloudinary').cloudinary;
 
-// Configure Cloudinary Storage
-const storage = new CloudinaryStorage({
+// Configure Cloudinary Storage for Images
+const imageStorage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
         folder: 'ebook/products',
@@ -21,9 +21,19 @@ const storage = new CloudinaryStorage({
     },
 });
 
-// Configure multer
-const upload = multer({
-    storage: storage,
+// Configure Cloudinary Storage for PDFs
+const pdfStorage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'ebook/digital-files',
+        resource_type: 'raw', // PDFs are raw files, not images
+        allowed_formats: ['pdf'],
+    },
+});
+
+// Configure multer for images
+const imageUpload = multer({
+    storage: imageStorage,
     limits: {
         fileSize: 5 * 1024 * 1024, // 5MB max file size
     },
@@ -37,15 +47,35 @@ const upload = multer({
     },
 });
 
+// Configure multer for PDFs
+const pdfUpload = multer({
+    storage: pdfStorage,
+    limits: {
+        fileSize: 50 * 1024 * 1024, // 50MB max file size for PDFs
+    },
+    fileFilter: (req, file, cb) => {
+        // Accept only PDF files
+        if (file.mimetype === 'application/pdf') {
+            cb(null, true);
+        } else {
+            cb(new Error('Only PDF files are allowed!'), false);
+        }
+    },
+});
+
 // Single image upload middleware
-const uploadSingle = upload.single('image');
+const uploadSingle = imageUpload.single('image');
 
 // Multiple images upload middleware
-const uploadMultiple = upload.array('images', 10); // Max 10 images
+const uploadMultiple = imageUpload.array('images', 10); // Max 10 images
+
+// PDF upload middleware
+const uploadPDF = pdfUpload.single('pdf');
 
 module.exports = {
     uploadSingle,
     uploadMultiple,
-    upload,
+    uploadPDF,
+    upload: imageUpload,
 };
 

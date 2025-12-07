@@ -5,20 +5,55 @@
 
 const fs = require('fs').promises;
 const path = require('path');
+const axios = require('axios');
 const { addWatermark, generateWatermarkText } = require('../utils/pdfWatermark');
 const eBookAccessRepository = require('../repositories/eBookAccessRepository');
 
 /**
- * Get PDF file path
+ * Download PDF from Cloudinary or URL
+ * @param {String} digitalFileUrl - Digital file URL (Cloudinary or external)
+ * @returns {Promise<Buffer>} - PDF buffer
+ */
+const downloadPDF = async (digitalFileUrl) => {
+    try {
+        // If it's a Cloudinary or external URL, download it
+        if (digitalFileUrl.startsWith('http://') || digitalFileUrl.startsWith('https://')) {
+            const response = await axios.get(digitalFileUrl, {
+                responseType: 'arraybuffer',
+                timeout: 30000, // 30 seconds timeout
+                headers: {
+                    'User-Agent': 'eBook-Server/1.0'
+                }
+            });
+            return Buffer.from(response.data);
+        }
+
+        // If it's a local path, read from filesystem
+        const uploadsDir = process.env.UPLOADS_DIR || 'uploads';
+        const pdfPath = path.join(process.cwd(), uploadsDir, digitalFileUrl);
+
+        // Check if file exists
+        try {
+            await fs.access(pdfPath);
+        } catch (error) {
+            throw new Error('PDF file not found locally');
+        }
+
+        return await fs.readFile(pdfPath);
+    } catch (error) {
+        throw new Error(`Failed to download PDF: ${error.message}`);
+    }
+};
+
+/**
+ * Get PDF file path (for local files only)
  * @param {String} digitalFileUrl - Digital file URL or path
  * @returns {String} - File path
  */
 const getPDFPath = (digitalFileUrl) => {
-    // If it's a full URL, extract path
+    // If it's a full URL, it's not a local path
     if (digitalFileUrl.startsWith('http://') || digitalFileUrl.startsWith('https://')) {
-        // For cloud storage, you'd need to download first
-        // For now, assume it's a local path or handle cloud URLs separately
-        throw new Error('Cloud storage URLs require download first');
+        return null; // Not a local file
     }
 
     // Assume it's a relative path from uploads directory
@@ -40,18 +75,8 @@ const serveWatermarkedPDF = async (access, options = {}) => {
             throw new Error('Product does not have a digital file');
         }
 
-        // Get PDF path
-        const pdfPath = getPDFPath(product.digitalFile);
-
-        // Check if file exists
-        try {
-            await fs.access(pdfPath);
-        } catch (error) {
-            throw new Error('PDF file not found');
-        }
-
-        // Read PDF file
-        const pdfBuffer = await fs.readFile(pdfPath);
+        // Download PDF (handles both Cloudinary URLs and local files)
+        const pdfBuffer = await downloadPDF(product.digitalFile);
 
         // Generate watermark text
         // Ensure user and order are populated
@@ -90,14 +115,29 @@ const serveWatermarkedPDF = async (access, options = {}) => {
  */
 const getPDFMetadata = async (digitalFileUrl) => {
     try {
-        const pdfPath = getPDFPath(digitalFileUrl);
-        const stats = await fs.stat(pdfPath);
+        // For URLs, download and get size
+        if (digitalFileUrl.startsWith('http://') || digitalFileUrl.startsWith('https://')) {
+            const buffer = await downloadPDF(digitalFileUrl);
+            return {
+                size: buffer.length,
+                url: digitalFileUrl,
+                isCloud: true
+            };
+        }
 
+        // For local files
+        const pdfPath = getPDFPath(digitalFileUrl);
+        if (!pdfPath) {
+            throw new Error('Invalid file path');
+        }
+
+        const stats = await fs.stat(pdfPath);
         return {
             size: stats.size,
             created: stats.birthtime,
             modified: stats.mtime,
-            path: pdfPath
+            path: pdfPath,
+            isCloud: false
         };
     } catch (error) {
         throw new Error(`Failed to get PDF metadata: ${error.message}`);
@@ -111,7 +151,32 @@ const getPDFMetadata = async (digitalFileUrl) => {
  */
 const pdfExists = async (digitalFileUrl) => {
     try {
+        // For URLs, try to download (head request would be better but axios doesn't always support it)
+        if (digitalFileUrl.startsWith('http://') || digitalFileUrl.startsWith('https://')) {
+            try {
+                await axios.head(digitalFileUrl, { timeout: 5000 });
+                return true;
+            } catch (error) {
+                // If HEAD fails, try GET with range
+                try {
+                    const response = await axios.get(digitalFileUrl, {
+                        responseType: 'arraybuffer',
+                        timeout: 5000,
+                        headers: { 'Range': 'bytes=0-1' }
+                    });
+                    return response.status === 200 || response.status === 206;
+                } catch {
+                    return false;
+                }
+            }
+        }
+
+        // For local files
         const pdfPath = getPDFPath(digitalFileUrl);
+        if (!pdfPath) {
+            return false;
+        }
+
         await fs.access(pdfPath);
         return true;
     } catch (error) {
@@ -123,6 +188,7 @@ module.exports = {
     serveWatermarkedPDF,
     getPDFMetadata,
     pdfExists,
-    getPDFPath
+    getPDFPath,
+    downloadPDF
 };
 

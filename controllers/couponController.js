@@ -60,6 +60,25 @@ exports.getCouponByCode = async (req, res, next) => {
 };
 
 /**
+ * Get active coupons (Public)
+ * GET /api/coupons/public/active
+ */
+exports.getActiveCoupons = async (req, res, next) => {
+    try {
+        const { limit = 5 } = req.query;
+        const result = await couponService.getActiveCoupons(parseInt(limit));
+        res.status(200).json({
+            success: true,
+            message: 'Active coupons retrieved successfully',
+            data: result.coupons || result,
+            count: result.coupons?.length || result.length || 0
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
  * Validate coupon (Public)
  * POST /api/coupons/validate
  */

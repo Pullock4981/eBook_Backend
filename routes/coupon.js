@@ -13,6 +13,7 @@ const couponController = require('../controllers/couponController');
 
 // Public routes (for coupon validation)
 router.get('/code/:code', couponController.getCouponByCode);
+router.get('/public/active', couponController.getActiveCoupons); // Public route for active coupons
 router.post(
     '/validate',
     [

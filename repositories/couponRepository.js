@@ -106,6 +106,27 @@ const incrementUsage = async (id) => {
     );
 };
 
+/**
+ * Find active coupons for public display
+ * @param {Number} limit - Maximum number of coupons to return
+ * @returns {Promise<Array>} - Active coupon documents
+ */
+const findActive = async (limit = 5) => {
+    const now = new Date();
+    const coupons = await Coupon.find({
+        isActive: true,
+        $or: [
+            { expiryDate: null },
+            { expiryDate: { $gt: now } }
+        ]
+    })
+        .sort({ createdAt: -1 })
+        .limit(parseInt(limit));
+
+    // Filter coupons where usedCount < usageLimit
+    return coupons.filter(coupon => (coupon.usedCount || 0) < coupon.usageLimit);
+};
+
 module.exports = {
     create,
     findByCode,
@@ -113,6 +134,7 @@ module.exports = {
     getAll,
     updateById,
     deleteById,
-    incrementUsage
+    incrementUsage,
+    findActive
 };
 

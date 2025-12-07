@@ -16,9 +16,15 @@ router.post(
     '/',
     authenticate,
     [
-        body('paymentMethod').isIn(['sslcommerz', 'bkash', 'nagad', 'cash_on_delivery'])
+        body('paymentMethod')
+            .notEmpty()
+            .withMessage('Payment method is required')
+            .isIn(['sslcommerz', 'bkash', 'nagad', 'cash_on_delivery'])
             .withMessage('Invalid payment method'),
-        body('shippingAddress').optional().isMongoId().withMessage('Invalid shipping address ID')
+        body('shippingAddress')
+            .optional({ nullable: true, checkFalsy: true })
+            .isMongoId()
+            .withMessage('Invalid shipping address ID')
     ],
     validate,
     orderController.createOrder

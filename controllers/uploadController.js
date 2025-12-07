@@ -75,3 +75,37 @@ exports.uploadMultipleImages = async (req, res, next) => {
     }
 };
 
+/**
+ * Upload PDF file
+ * POST /api/upload/pdf
+ */
+exports.uploadPDF = async (req, res, next) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'No PDF file provided',
+            });
+        }
+
+        // File is already uploaded by multer middleware
+        // Cloudinary returns the result in req.file
+        const result = {
+            public_id: req.file.public_id,
+            secure_url: req.file.secure_url,
+            url: req.file.url,
+            format: req.file.format,
+            bytes: req.file.bytes,
+            resource_type: req.file.resource_type || 'raw',
+        };
+
+        res.status(200).json({
+            success: true,
+            message: 'PDF uploaded successfully',
+            data: result,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+

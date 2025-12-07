@@ -106,7 +106,7 @@ const sampleProducts = [
         isFeatured: true,
         isActive: true,
     },
-    // Digital Products (eBooks)
+    // Digital Products (eBooks) - Demo PDFs
     {
         name: 'JavaScript: The Complete Guide',
         type: 'digital',
@@ -114,7 +114,7 @@ const sampleProducts = [
         shortDescription: 'Complete guide to JavaScript programming',
         price: 300,
         discountPrice: 250,
-        digitalFile: 'https://example.com/javascript-guide.pdf',
+        digitalFile: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
         fileSize: 5242880, // 5MB
         tags: ['programming', 'javascript', 'web-development', 'technology'],
         images: [
@@ -129,7 +129,7 @@ const sampleProducts = [
         description: 'Learn Python programming for data science. Includes NumPy, Pandas, Matplotlib, and machine learning basics.',
         shortDescription: 'Python programming for data science',
         price: 350,
-        digitalFile: 'https://example.com/python-datascience.pdf',
+        digitalFile: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
         fileSize: 7340032, // 7MB
         tags: ['programming', 'python', 'data-science', 'machine-learning'],
         images: [
@@ -145,7 +145,7 @@ const sampleProducts = [
         shortDescription: 'Advanced React patterns and best practices',
         price: 400,
         discountPrice: 320,
-        digitalFile: 'https://example.com/react-mastery.pdf',
+        digitalFile: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
         fileSize: 6291456, // 6MB
         tags: ['programming', 'react', 'web-development', 'frontend'],
         images: [
@@ -160,9 +160,40 @@ const sampleProducts = [
         description: 'Complete guide to building backend applications with Node.js, Express, MongoDB, and more.',
         shortDescription: 'Backend development with Node.js',
         price: 380,
-        digitalFile: 'https://example.com/nodejs-backend.pdf',
+        digitalFile: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
         fileSize: 8388608, // 8MB
         tags: ['programming', 'nodejs', 'backend', 'api'],
+        images: [
+            'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500',
+        ],
+        isFeatured: false,
+        isActive: true,
+    },
+    {
+        name: 'Vue.js Complete Guide',
+        type: 'digital',
+        description: 'Master Vue.js framework from basics to advanced. Learn components, routing, state management, and more.',
+        shortDescription: 'Complete guide to Vue.js framework',
+        price: 320,
+        discountPrice: 280,
+        digitalFile: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+        fileSize: 5242880, // 5MB
+        tags: ['programming', 'vuejs', 'web-development', 'frontend'],
+        images: [
+            'https://images.unsplash.com/photo-1593720213428-28a5b9e94613?w=500',
+        ],
+        isFeatured: true,
+        isActive: true,
+    },
+    {
+        name: 'MongoDB Database Design',
+        type: 'digital',
+        description: 'Learn MongoDB database design, indexing, aggregation, and best practices for scalable applications.',
+        shortDescription: 'MongoDB database design and optimization',
+        price: 360,
+        digitalFile: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+        fileSize: 6291456, // 6MB
+        tags: ['programming', 'mongodb', 'database', 'backend'],
         images: [
             'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500',
         ],

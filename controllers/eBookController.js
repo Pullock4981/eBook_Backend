@@ -102,16 +102,22 @@ exports.servePDF = async (req, res, next) => {
         // Get watermarked PDF
         const pdfBuffer = await pdfService.serveWatermarkedPDF(access);
 
-        // Set headers for PDF viewing
+        // Set headers for PDF viewing (inline prevents download prompt)
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', 'inline; filename="ebook.pdf"');
         res.setHeader('Content-Length', pdfBuffer.length);
 
-        // Security headers to prevent download
+        // Security headers to prevent download and caching
         res.setHeader('X-Content-Type-Options', 'nosniff');
-        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+        res.setHeader('X-Frame-Options', 'SAMEORIGIN'); // Prevent embedding in other sites
+        res.setHeader('Content-Security-Policy', "frame-ancestors 'self'"); // Additional frame protection
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private, max-age=0');
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Expires', '0');
+
+        // Prevent PDF download via browser
+        res.setHeader('X-Download-Options', 'noopen'); // IE/Edge
+        res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
 
         // Send PDF
         res.send(pdfBuffer);

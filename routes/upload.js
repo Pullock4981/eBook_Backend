@@ -8,7 +8,7 @@ const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../middleware/auth');
 const { requireAdmin } = require('../middleware/roleCheck');
-const { uploadSingle, uploadMultiple } = require('../middleware/upload');
+const { uploadSingle, uploadMultiple, uploadPDF } = require('../middleware/upload');
 const uploadController = require('../controllers/uploadController');
 
 // Admin only routes
@@ -26,6 +26,14 @@ router.post(
     requireAdmin,
     uploadMultiple,
     uploadController.uploadMultipleImages
+);
+
+router.post(
+    '/pdf',
+    authenticate,
+    requireAdmin,
+    uploadPDF,
+    uploadController.uploadPDF
 );
 
 module.exports = router;
