@@ -32,7 +32,7 @@ router.post(
 router.put(
     '/items/:productId',
     [
-        commonRules.objectId('productId'),
+        param('productId').isMongoId().withMessage('Product ID must be a valid MongoDB ObjectId'),
         body('quantity').isInt({ min: 0 }).withMessage('Quantity cannot be negative')
     ],
     validate,
@@ -43,7 +43,7 @@ router.put(
 router.delete(
     '/items/:productId',
     [
-        commonRules.objectId('productId')
+        param('productId').isMongoId().withMessage('Product ID must be a valid MongoDB ObjectId')
     ],
     validate,
     cartController.removeFromCart

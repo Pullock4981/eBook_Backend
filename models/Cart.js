@@ -5,6 +5,22 @@
 
 const mongoose = require('mongoose');
 
+// Product snapshot subdocument schema
+const productSnapshotSchema = new mongoose.Schema({
+    name: {
+        type: String,
+        default: ''
+    },
+    type: {
+        type: String,
+        default: ''
+    },
+    thumbnail: {
+        type: String,
+        default: ''
+    }
+}, { _id: false });
+
 const cartItemSchema = new mongoose.Schema({
     product: {
         type: mongoose.Schema.Types.ObjectId,
@@ -23,9 +39,8 @@ const cartItemSchema = new mongoose.Schema({
     },
     // Store product details at time of adding (for price changes)
     productSnapshot: {
-        name: String,
-        type: String,
-        thumbnail: String
+        type: productSnapshotSchema,
+        default: () => ({})
     }
 }, { _id: false });
 
@@ -87,8 +102,25 @@ cartSchema.methods.calculateTotals = function () {
 
 // Method to add item to cart
 cartSchema.methods.addItem = function (productId, quantity, price, productSnapshot) {
+    // Convert productId to string for comparison
+    const productIdStr = productId?.toString ? productId.toString() : String(productId);
+
+    // Helper function to get product ID from item (handles both populated and unpopulated)
+    const getProductId = (item) => {
+        if (!item.product) return '';
+        // If populated, product is an object with _id
+        if (typeof item.product === 'object' && item.product._id) {
+            return item.product._id.toString();
+        }
+        // If not populated, product is ObjectId
+        return item.product.toString();
+    };
+
     const existingItemIndex = this.items.findIndex(
-        item => item.product.toString() === productId.toString()
+        item => {
+            const itemProductId = getProductId(item);
+            return itemProductId === productIdStr;
+        }
     );
 
     if (existingItemIndex > -1) {
@@ -97,9 +129,9 @@ cartSchema.methods.addItem = function (productId, quantity, price, productSnapsh
         this.items[existingItemIndex].price = price; // Update price
         this.items[existingItemIndex].productSnapshot = productSnapshot;
     } else {
-        // Add new item
+        // Add new item - ensure productId is stored as ObjectId
         this.items.push({
-            product: productId,
+            product: productIdStr,
             quantity,
             price,
             productSnapshot
@@ -112,18 +144,46 @@ cartSchema.methods.addItem = function (productId, quantity, price, productSnapsh
 
 // Method to update item quantity
 cartSchema.methods.updateItemQuantity = function (productId, quantity) {
+    // Convert productId to string for comparison
+    const productIdStr = productId?.toString ? productId.toString() : String(productId);
+
+    // Helper function to get product ID from item (handles both populated and unpopulated)
+    const getProductId = (item) => {
+        if (!item.product) return '';
+        // If populated, product is an object with _id
+        if (typeof item.product === 'object' && item.product._id) {
+            return item.product._id.toString();
+        }
+        // If not populated, product is ObjectId
+        return item.product.toString();
+    };
+
     const item = this.items.find(
-        item => item.product.toString() === productId.toString()
+        item => {
+            const itemProductId = getProductId(item);
+            return itemProductId === productIdStr;
+        }
     );
 
     if (!item) {
+        // Debug: Log cart items for troubleshooting
+        if (process.env.NODE_ENV !== 'production') {
+            console.log('Cart items:', this.items.map(i => ({
+                product: getProductId(i),
+                quantity: i.quantity
+            })));
+            console.log('Looking for productId:', productIdStr);
+        }
         throw new Error('Item not found in cart');
     }
 
     if (quantity <= 0) {
         // Remove item
         this.items = this.items.filter(
-            item => item.product.toString() !== productId.toString()
+            item => {
+                const itemProductId = getProductId(item);
+                return itemProductId !== productIdStr;
+            }
         );
     } else {
         item.quantity = quantity;
@@ -135,8 +195,25 @@ cartSchema.methods.updateItemQuantity = function (productId, quantity) {
 
 // Method to remove item
 cartSchema.methods.removeItem = function (productId) {
+    // Convert productId to string for comparison
+    const productIdStr = productId?.toString ? productId.toString() : String(productId);
+
+    // Helper function to get product ID from item (handles both populated and unpopulated)
+    const getProductId = (item) => {
+        if (!item.product) return '';
+        // If populated, product is an object with _id
+        if (typeof item.product === 'object' && item.product._id) {
+            return item.product._id.toString();
+        }
+        // If not populated, product is ObjectId
+        return item.product.toString();
+    };
+
     this.items = this.items.filter(
-        item => item.product.toString() !== productId.toString()
+        item => {
+            const itemProductId = getProductId(item);
+            return itemProductId !== productIdStr;
+        }
     );
     this.calculateTotals();
     return this;

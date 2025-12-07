@@ -46,15 +46,18 @@ const getUserByMobile = async (mobile) => {
 
 /**
  * Get user by ID
- * @param {String} id - User ID
+ * @param {String|ObjectId} id - User ID
  * @returns {Promise<Object>} - User document
  */
 const getUserById = async (id) => {
-    if (!id || id.length !== 24) {
+    // Convert to string if it's an ObjectId
+    const idStr = id?.toString ? id.toString() : String(id);
+
+    if (!idStr || idStr.length !== 24) {
         throw new Error('Invalid user ID format');
     }
 
-    const user = await userRepository.findById(id);
+    const user = await userRepository.findById(idStr);
 
     if (!user) {
         throw new Error('User not found');
@@ -65,18 +68,21 @@ const getUserById = async (id) => {
 
 /**
  * Update user profile
- * @param {String} userId - User ID
+ * @param {String|ObjectId} userId - User ID
  * @param {Object} profileData - Profile data to update
  * @returns {Promise<Object>} - Updated user document
  */
 const updateProfile = async (userId, profileData) => {
+    // Convert to string if it's an ObjectId
+    const userIdStr = userId?.toString ? userId.toString() : String(userId);
+
     // Validate user ID
-    if (!userId || userId.length !== 24) {
+    if (!userIdStr || userIdStr.length !== 24) {
         throw new Error('Invalid user ID format');
     }
 
     // Check if user exists
-    const existingUser = await userRepository.findById(userId);
+    const existingUser = await userRepository.findById(userIdStr);
     if (!existingUser) {
         throw new Error('User not found');
     }
@@ -92,7 +98,7 @@ const updateProfile = async (userId, profileData) => {
         // Check if email is already taken by another user
         if (profileData.email) {
             const emailUser = await userRepository.findByEmail(profileData.email);
-            if (emailUser && emailUser._id.toString() !== userId) {
+            if (emailUser && emailUser._id.toString() !== userIdStr) {
                 throw new Error('Email already registered with another account');
             }
             updateData['profile.email'] = profileData.email.toLowerCase();
@@ -106,7 +112,7 @@ const updateProfile = async (userId, profileData) => {
     }
 
     // Update user
-    const updatedUser = await userRepository.updateById(userId, updateData);
+    const updatedUser = await userRepository.updateById(userIdStr, updateData);
     return updatedUser;
 };
 
@@ -129,7 +135,7 @@ const changePassword = async (userId, currentPassword, newPassword) => {
     }
 
     // Get user with password
-    const user = await userRepository.findById(userId, true);
+    const user = await userRepository.findById(userIdStr, true);
 
     if (!user) {
         throw new Error('User not found');
@@ -147,7 +153,7 @@ const changePassword = async (userId, currentPassword, newPassword) => {
     }
 
     // Update password (will be hashed by pre-save hook)
-    await userRepository.updatePassword(userId, newPassword);
+    await userRepository.updatePassword(userIdStr, newPassword);
 
     return { message: 'Password changed successfully' };
 };
@@ -159,8 +165,11 @@ const changePassword = async (userId, currentPassword, newPassword) => {
  * @returns {Promise<Object>} - Success message
  */
 const setPassword = async (userId, password) => {
+    // Convert to string if it's an ObjectId
+    const userIdStr = userId?.toString ? userId.toString() : String(userId);
+
     // Validate user ID
-    if (!userId || userId.length !== 24) {
+    if (!userIdStr || userIdStr.length !== 24) {
         throw new Error('Invalid user ID format');
     }
 
@@ -170,20 +179,20 @@ const setPassword = async (userId, password) => {
     }
 
     // Get user
-    const user = await userRepository.findById(userId);
+    const user = await userRepository.findById(userIdStr);
 
     if (!user) {
         throw new Error('User not found');
     }
 
     // Check if password already exists
-    const userWithPassword = await userRepository.findById(userId, true);
+    const userWithPassword = await userRepository.findById(userIdStr, true);
     if (userWithPassword && userWithPassword.password) {
         throw new Error('Password already set. Use change password instead.');
     }
 
     // Set password (will be hashed by pre-save hook)
-    await userRepository.updatePassword(userId, password);
+    await userRepository.updatePassword(userIdStr, password);
 
     return { message: 'Password set successfully' };
 };
