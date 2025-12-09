@@ -16,8 +16,45 @@ const withdrawRequestRepository = require('../repositories/withdrawRequestReposi
  */
 const getAllAffiliates = async (filters = {}, page = 1, limit = 10) => {
     try {
-        return await affiliateRepository.findAll(filters, page, limit);
+        console.log('getAllAffiliates service - filters:', filters, 'page:', page, 'limit:', limit);
+
+        const result = await affiliateRepository.findAll(filters, page, limit);
+
+        console.log('Repository result:', {
+            affiliatesCount: result.affiliates?.length || 0,
+            total: result.pagination?.total || 0
+        });
+
+        // If search is provided, filter by user name/email/mobile after populate
+        if (filters.search && filters.search.trim()) {
+            const searchTerm = filters.search.trim().toLowerCase();
+            console.log('Filtering by search term:', searchTerm);
+            result.affiliates = result.affiliates.filter(affiliate => {
+                const userName = affiliate.user?.profile?.name?.toLowerCase() || '';
+                const userEmail = affiliate.user?.profile?.email?.toLowerCase() || '';
+                const userMobile = affiliate.user?.mobile?.toLowerCase() || '';
+                const matches = userName.includes(searchTerm) ||
+                    userEmail.includes(searchTerm) ||
+                    userMobile.includes(searchTerm);
+                return matches;
+            });
+            // Update total count after filtering
+            result.pagination.total = result.affiliates.length;
+            result.pagination.pages = Math.ceil(result.affiliates.length / result.pagination.limit);
+            console.log('After search filter:', {
+                affiliatesCount: result.affiliates.length,
+                total: result.pagination.total
+            });
+        }
+
+        console.log('Final result:', {
+            affiliatesCount: result.affiliates?.length || 0,
+            pagination: result.pagination
+        });
+
+        return result;
     } catch (error) {
+        console.error('Error in getAllAffiliates service:', error);
         throw new Error(`Failed to get affiliates: ${error.message}`);
     }
 };

@@ -39,8 +39,22 @@ const createProduct = async (productData) => {
         throw new Error('Stock is required for physical products');
     }
 
+    // Log PDF information for digital products
+    if (productData.type === 'digital' && productData.digitalFile) {
+        console.log('📄 Creating digital product with PDF:');
+        console.log('   - PDF URL:', productData.digitalFile);
+        console.log('   - File Size:', productData.fileSize ? `${(productData.fileSize / 1024 / 1024).toFixed(2)} MB` : 'Not specified');
+    }
+
     // Create product
     const product = await productRepository.create(productData);
+
+    // Verify PDF was saved
+    if (productData.type === 'digital' && product.digitalFile) {
+        console.log('✅ PDF saved successfully in database');
+        console.log('   - Stored URL:', product.digitalFile);
+    }
+
     return product;
 };
 
@@ -223,8 +237,22 @@ const updateProduct = async (id, productData) => {
         }
     }
 
+    // Log PDF information if updating digital file
+    if (productData.type === 'digital' && productData.digitalFile) {
+        console.log('📄 Updating digital product PDF:');
+        console.log('   - New PDF URL:', productData.digitalFile);
+        console.log('   - File Size:', productData.fileSize ? `${(productData.fileSize / 1024 / 1024).toFixed(2)} MB` : 'Not specified');
+    }
+
     // Update product
     const updatedProduct = await productRepository.updateById(id, productData);
+
+    // Verify PDF was updated
+    if (productData.type === 'digital' && updatedProduct.digitalFile) {
+        console.log('✅ PDF updated successfully in database');
+        console.log('   - Stored URL:', updatedProduct.digitalFile);
+    }
+
     return updatedProduct;
 };
 
@@ -314,6 +342,62 @@ const updateProductStock = async (id, quantity) => {
     return await productRepository.updateStock(id, quantity);
 };
 
+/**
+ * Get last updated products for home page
+ * @param {Number} limit - Number of products to return
+ * @returns {Promise<Array>} - Array of products
+ */
+const getLastUpdates = async (limit = 3) => {
+    return await productRepository.getLastUpdates(limit);
+};
+
+/**
+ * Get coming soon products for home page
+ * @param {Number} limit - Number of products to return
+ * @returns {Promise<Array>} - Array of products
+ */
+const getComingSoon = async (limit = 3) => {
+    return await productRepository.getComingSoon(limit);
+};
+
+/**
+ * Get popular reader products for home page
+ * @param {Number} limit - Number of products to return
+ * @returns {Promise<Array>} - Array of products
+ */
+const getPopularReader = async (limit = 3) => {
+    return await productRepository.getPopularReader(limit);
+};
+
+/**
+ * Get frequently downloaded products for home page
+ * @param {Number} limit - Number of products to return
+ * @returns {Promise<Array>} - Array of products
+ */
+const getFrequentlyDownloaded = async (limit = 3) => {
+    return await productRepository.getFrequentlyDownloaded(limit);
+};
+
+/**
+ * Get all digital products with PDFs (Admin)
+ * @param {Number} page - Page number
+ * @param {Number} limit - Items per page
+ * @returns {Promise<Object>} - Products with pagination
+ */
+const getDigitalProducts = async (page = 1, limit = 20) => {
+    return await productRepository.getDigitalProducts(page, limit);
+};
+
+/**
+ * Get user's favorited products for home page
+ * @param {String} userId - User ID
+ * @param {Number} limit - Number of products to return
+ * @returns {Promise<Array>} - Array of products
+ */
+const getFavourited = async (userId, limit = 3) => {
+    return await productRepository.getFavourited(userId, limit);
+};
+
 module.exports = {
     createProduct,
     getAllProducts,
@@ -324,6 +408,12 @@ module.exports = {
     searchProducts,
     getProductsByCategory,
     getFeaturedProducts,
-    updateProductStock
+    updateProductStock,
+    getLastUpdates,
+    getComingSoon,
+    getPopularReader,
+    getFrequentlyDownloaded,
+    getFavourited,
+    getDigitalProducts
 };
 

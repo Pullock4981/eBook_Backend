@@ -286,6 +286,31 @@ const updatePaymentDetails = async (affiliateId, paymentDetails) => {
     }
 };
 
+/**
+ * Cancel affiliate registration (only if pending)
+ * @param {String} userId - User ID
+ * @returns {Promise<Object>} - Deleted affiliate
+ */
+const cancelAffiliateRegistration = async (userId) => {
+    try {
+        const affiliate = await affiliateRepository.findByUser(userId);
+        if (!affiliate) {
+            throw new Error('Affiliate not found');
+        }
+
+        // Only allow cancellation if status is pending
+        if (affiliate.status !== 'pending') {
+            throw new Error(`Cannot cancel affiliate registration. Current status: ${affiliate.status}. Only pending registrations can be cancelled.`);
+        }
+
+        // Delete the affiliate record
+        const deleted = await affiliateRepository.deleteById(affiliate._id);
+        return deleted;
+    } catch (error) {
+        throw new Error(`Failed to cancel affiliate registration: ${error.message}`);
+    }
+};
+
 module.exports = {
     registerAsAffiliate,
     getAffiliateByUser,
@@ -294,6 +319,7 @@ module.exports = {
     createWithdrawRequest,
     getWithdrawRequests,
     getCommissions,
-    updatePaymentDetails
+    updatePaymentDetails,
+    cancelAffiliateRegistration
 };
 

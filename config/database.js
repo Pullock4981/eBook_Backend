@@ -11,10 +11,32 @@ const mongoose = require('mongoose');
  */
 const connectDB = async () => {
     try {
-        const conn = await mongoose.connect(process.env.MONGODB_URI, {
-            // Mongoose 6+ doesn't need these options, but keeping for older versions
-            // useNewUrlParser: true,
-            // useUnifiedTopology: true,
+        // Check if MONGODB_URI is set
+        if (!process.env.MONGODB_URI) {
+            throw new Error('MONGODB_URI is not set in .env file. Please add: MONGODB_URI=mongodb://localhost:27017/ebook_db');
+        }
+
+        // Fix MONGODB_URI if database name is missing
+        let mongoUri = process.env.MONGODB_URI.trim();
+
+        // Check if database name is missing (URI ends with /? or just ?)
+        if (mongoUri.includes('mongodb+srv://')) {
+            // Extract the base part before query parameters
+            const uriParts = mongoUri.split('?');
+            const baseUri = uriParts[0];
+            const queryParams = uriParts.length > 1 ? '?' + uriParts.slice(1).join('?') : '';
+
+            // Check if database name is missing (URI ends with .mongodb.net/ or .mongodb.net)
+            if (baseUri.endsWith('.mongodb.net/') || baseUri.endsWith('.mongodb.net')) {
+                // Add database name
+                mongoUri = baseUri.replace(/\.mongodb\.net\/?$/, '.mongodb.net/ebook_db') + queryParams;
+                console.log('⚠️  Database name was missing in MONGODB_URI. Added: /ebook_db');
+            }
+        }
+
+        const conn = await mongoose.connect(mongoUri, {
+            serverSelectionTimeoutMS: 10000, // Timeout after 10s
+            socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
         });
 
         console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
@@ -22,11 +44,26 @@ const connectDB = async () => {
 
         // Handle connection events
         mongoose.connection.on('error', (err) => {
-            console.error('❌ MongoDB connection error:', err);
+            console.error('❌ MongoDB connection error:', err.message);
         });
 
         mongoose.connection.on('disconnected', () => {
             console.warn('⚠️ MongoDB disconnected');
+            // Auto-reconnect after 5 seconds
+            setTimeout(() => {
+                console.log('🔄 Attempting to reconnect to MongoDB...');
+                mongoose.connect(mongoUri, {
+                    serverSelectionTimeoutMS: 10000,
+                    socketTimeoutMS: 45000,
+                }).catch((err) => {
+                    console.error('❌ Reconnection failed:', err.message);
+                });
+            }, 5000);
+        });
+
+        // Handle reconnection
+        mongoose.connection.on('reconnected', () => {
+            console.log('✅ MongoDB reconnected successfully');
         });
 
         // Graceful shutdown
@@ -38,8 +75,26 @@ const connectDB = async () => {
 
         return conn;
     } catch (error) {
-        console.error('❌ Database connection error:', error.message);
-        throw error;
+        // Provide helpful error messages
+        let errorMessage = error.message;
+
+        if (error.message.includes('ENOTFOUND') || error.message.includes('getaddrinfo')) {
+            errorMessage = 'Could not resolve MongoDB host. Please check your MONGODB_URI.';
+        } else if (error.message.includes('authentication failed')) {
+            errorMessage = 'MongoDB authentication failed. Please check your username and password.';
+        } else if (error.message.includes('IP')) {
+            errorMessage = 'Could not connect to MongoDB Atlas. Your IP address may not be whitelisted. Please add your IP to MongoDB Atlas whitelist.';
+        } else if (error.message.includes('ECONNREFUSED')) {
+            errorMessage = 'Connection refused. Is MongoDB running? For local MongoDB, make sure MongoDB service is started.';
+        }
+
+        console.error('❌ Database connection error:', errorMessage);
+        console.error('💡 Common solutions:');
+        console.error('   1. For local MongoDB: Make sure MongoDB service is running');
+        console.error('   2. For MongoDB Atlas: Check IP whitelist and connection string');
+        console.error('   3. Verify MONGODB_URI in .env file');
+
+        throw new Error(errorMessage);
     }
 };
 

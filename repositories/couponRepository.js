@@ -144,6 +144,37 @@ const updateExpiredCoupons = async (now) => {
     );
 };
 
+/**
+ * Find coupons by affiliate ID
+ * @param {String} affiliateId - Affiliate ID
+ * @param {Object} filters - Filter options
+ * @param {Number} page - Page number
+ * @param {Number} limit - Items per page
+ * @returns {Promise<Object>} - Coupons with pagination
+ */
+const findByAffiliate = async (affiliateId, filters = {}, page = 1, limit = 10) => {
+    const skip = (page - 1) * limit;
+    const query = { affiliate: affiliateId, ...filters };
+
+    const [coupons, total] = await Promise.all([
+        Coupon.find(query)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit),
+        Coupon.countDocuments(query)
+    ]);
+
+    return {
+        coupons,
+        pagination: {
+            page,
+            limit,
+            total,
+            pages: Math.ceil(total / limit)
+        }
+    };
+};
+
 module.exports = {
     create,
     findByCode,
@@ -153,6 +184,7 @@ module.exports = {
     deleteById,
     incrementUsage,
     findActive,
-    updateExpiredCoupons
+    updateExpiredCoupons,
+    findByAffiliate
 };
 

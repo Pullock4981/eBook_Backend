@@ -60,5 +60,26 @@ router.get('/withdraw-requests', affiliateController.getWithdrawRequests);
  */
 router.put('/payment-details', affiliateController.updatePaymentDetails);
 
+/**
+ * @route   DELETE /api/affiliates/cancel
+ * @desc    Cancel affiliate registration (only if pending)
+ * @access  Private
+ */
+router.delete('/cancel', affiliateController.cancelAffiliateRegistration);
+
+/**
+ * @route   POST /api/affiliates/coupons
+ * @desc    Generate affiliate coupon
+ * @access  Private
+ */
+router.post('/coupons', affiliateController.generateCoupon);
+
+/**
+ * @route   GET /api/affiliates/coupons
+ * @desc    Get affiliate coupons
+ * @access  Private
+ */
+router.get('/coupons', affiliateController.getCoupons);
+
 module.exports = router;
 

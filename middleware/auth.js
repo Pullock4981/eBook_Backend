@@ -35,6 +35,15 @@ const authenticate = async (req, res, next) => {
         // Verify token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
+        // Check if MongoDB is connected
+        const mongoose = require('mongoose');
+        if (mongoose.connection.readyState !== 1) {
+            return res.status(503).json({
+                success: false,
+                message: 'Database connection is not available. Please try again later.'
+            });
+        }
+
         // Get user from database
         const user = await User.findById(decoded.id).select('-otp -otpExpiry');
 

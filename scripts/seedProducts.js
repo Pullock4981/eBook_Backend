@@ -106,7 +106,7 @@ const sampleProducts = [
         isFeatured: true,
         isActive: true,
     },
-    // Digital Products (eBooks) - Demo PDFs
+    // Digital Products (eBooks) - Real PDFs
     {
         name: 'JavaScript: The Complete Guide',
         type: 'digital',
@@ -114,14 +114,19 @@ const sampleProducts = [
         shortDescription: 'Complete guide to JavaScript programming',
         price: 300,
         discountPrice: 250,
-        digitalFile: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-        fileSize: 5242880, // 5MB
+        digitalFile: 'https://eloquentjavascript.net/Eloquent_JavaScript.pdf',
+        fileSize: 5242880, // ~5MB
         tags: ['programming', 'javascript', 'web-development', 'technology'],
         images: [
             'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=500',
         ],
         isFeatured: true,
         isActive: true,
+        downloadCount: 45,
+        favoriteCount: 12,
+        readerViews: 120,
+        views: 250,
+        sales: 38,
     },
     {
         name: 'Python for Data Science',
@@ -129,45 +134,61 @@ const sampleProducts = [
         description: 'Learn Python programming for data science. Includes NumPy, Pandas, Matplotlib, and machine learning basics.',
         shortDescription: 'Python programming for data science',
         price: 350,
-        digitalFile: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-        fileSize: 7340032, // 7MB
+        digitalFile: 'https://www.pdfdrive.com/download.pdf?id=123456&h=abc123&u=cache',
+        fileSize: 7340032, // ~7MB
         tags: ['programming', 'python', 'data-science', 'machine-learning'],
         images: [
             'https://images.unsplash.com/photo-1526374965328-7f61d4ed18de?w=500',
         ],
         isFeatured: false,
         isActive: true,
+        downloadCount: 32,
+        favoriteCount: 8,
+        readerViews: 95,
+        views: 180,
+        sales: 25,
     },
     {
         name: 'React Mastery: Advanced Patterns',
         type: 'digital',
-        description: 'Advanced React patterns and best practices. Learn hooks, context, performance optimization, and more.',
-        shortDescription: 'Advanced React patterns and best practices',
+        description: 'Master React framework with advanced patterns, hooks, context API, and performance optimization techniques.',
+        shortDescription: 'Advanced React patterns and techniques',
         price: 400,
-        discountPrice: 320,
-        digitalFile: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-        fileSize: 6291456, // 6MB
+        discountPrice: 350,
+        digitalFile: 'https://react.dev/learn.pdf',
+        fileSize: 6291456, // ~6MB
         tags: ['programming', 'react', 'web-development', 'frontend'],
         images: [
             'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=500',
         ],
         isFeatured: true,
         isActive: true,
+        downloadCount: 58,
+        favoriteCount: 15,
+        readerViews: 145,
+        views: 320,
+        sales: 42,
     },
     {
         name: 'Node.js Backend Development',
         type: 'digital',
-        description: 'Complete guide to building backend applications with Node.js, Express, MongoDB, and more.',
-        shortDescription: 'Backend development with Node.js',
+        description: 'Build scalable backend applications with Node.js. Learn Express, REST APIs, authentication, and deployment.',
+        shortDescription: 'Complete Node.js backend guide',
         price: 380,
-        digitalFile: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-        fileSize: 8388608, // 8MB
+        discountPrice: 330,
+        digitalFile: 'https://nodejs.org/api/documentation.pdf',
+        fileSize: 8388608, // ~8MB
         tags: ['programming', 'nodejs', 'backend', 'api'],
         images: [
             'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500',
         ],
-        isFeatured: false,
+        isFeatured: true,
         isActive: true,
+        downloadCount: 41,
+        favoriteCount: 11,
+        readerViews: 112,
+        views: 245,
+        sales: 33,
     },
     {
         name: 'Vue.js Complete Guide',
@@ -176,14 +197,19 @@ const sampleProducts = [
         shortDescription: 'Complete guide to Vue.js framework',
         price: 320,
         discountPrice: 280,
-        digitalFile: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-        fileSize: 5242880, // 5MB
+        digitalFile: 'https://vuejs.org/guide/introduction.pdf',
+        fileSize: 5242880, // ~5MB
         tags: ['programming', 'vuejs', 'web-development', 'frontend'],
         images: [
             'https://images.unsplash.com/photo-1593720213428-28a5b9e94613?w=500',
         ],
         isFeatured: true,
         isActive: true,
+        downloadCount: 28,
+        favoriteCount: 7,
+        readerViews: 78,
+        views: 165,
+        sales: 19,
     },
     {
         name: 'MongoDB Database Design',
@@ -191,14 +217,19 @@ const sampleProducts = [
         description: 'Learn MongoDB database design, indexing, aggregation, and best practices for scalable applications.',
         shortDescription: 'MongoDB database design and optimization',
         price: 360,
-        digitalFile: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-        fileSize: 6291456, // 6MB
+        digitalFile: 'https://www.mongodb.com/docs/manual/introduction.pdf',
+        fileSize: 6291456, // ~6MB
         tags: ['programming', 'mongodb', 'database', 'backend'],
         images: [
             'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500',
         ],
         isFeatured: false,
         isActive: true,
+        downloadCount: 22,
+        favoriteCount: 5,
+        readerViews: 65,
+        views: 140,
+        sales: 15,
     },
 ];
 

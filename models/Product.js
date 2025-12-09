@@ -151,6 +151,38 @@ const productSchema = new mongoose.Schema({
     totalReviews: {
         type: Number,
         default: 0
+    },
+    // Home page sections
+    isLastUpdate: {
+        type: Boolean,
+        default: false
+    },
+    isComingSoon: {
+        type: Boolean,
+        default: false
+    },
+    isPopularReader: {
+        type: Boolean,
+        default: false
+    },
+    downloadCount: {
+        type: Number,
+        default: 0,
+        min: [0, 'Download count cannot be negative']
+    },
+    favoriteCount: {
+        type: Number,
+        default: 0,
+        min: [0, 'Favorite count cannot be negative']
+    },
+    readerViews: {
+        type: Number,
+        default: 0,
+        min: [0, 'Reader views cannot be negative']
+    },
+    releaseDate: {
+        type: Date,
+        default: null
     }
 }, {
     timestamps: true,

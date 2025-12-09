@@ -26,10 +26,23 @@ const create = async (affiliateData) => {
  */
 const findByUser = async (userId) => {
     try {
-        return await Affiliate.findOne({ user: userId })
-            .populate('user', 'profile.name profile.email mobile')
+        const affiliate = await Affiliate.findOne({ user: userId })
+            .populate({
+                path: 'user',
+                select: 'profile.name profile.email mobile',
+                model: 'User'
+            })
             .populate('approvedBy', 'profile.name');
+
+        console.log('findByUser - userId:', userId);
+        console.log('findByUser - affiliate found:', affiliate ? 'Yes' : 'No');
+        if (affiliate) {
+            console.log('findByUser - affiliate user:', affiliate.user);
+        }
+
+        return affiliate;
     } catch (error) {
+        console.error('findByUser error:', error);
         throw new Error(`Failed to find affiliate: ${error.message}`);
     }
 };
@@ -70,22 +83,58 @@ const findAll = async (filters = {}, page = 1, limit = 10) => {
             query.status = filters.status;
         }
 
-        if (filters.search) {
+        if (filters.search && filters.search.trim()) {
+            const searchRegex = { $regex: filters.search.trim(), $options: 'i' };
             query.$or = [
-                { referralCode: { $regex: filters.search, $options: 'i' } },
-                { 'user.profile.name': { $regex: filters.search, $options: 'i' } }
+                { referralCode: searchRegex },
+                { referralLink: searchRegex }
             ];
+            // Note: User fields will be searched after populate in service layer if needed
         }
 
+        // Build query - if no filters, get all
+        const affiliateQuery = Affiliate.find(query);
+
+        // Always populate user
+        affiliateQuery.populate({
+            path: 'user',
+            select: 'profile.name profile.email mobile',
+            model: 'User'
+        });
+
+        // Populate approvedBy if exists
+        affiliateQuery.populate('approvedBy', 'profile.name');
+
+        // Sort, skip, limit
+        affiliateQuery.sort({ createdAt: -1 }).skip(skip).limit(limitNum);
+
         const [affiliates, total] = await Promise.all([
-            Affiliate.find(query)
-                .populate('user', 'profile.name profile.email mobile')
-                .populate('approvedBy', 'profile.name')
-                .sort({ createdAt: -1 })
-                .skip(skip)
-                .limit(limitNum),
+            affiliateQuery.exec(),
             Affiliate.countDocuments(query)
         ]);
+
+        console.log('Repository - Query:', JSON.stringify(query));
+        console.log('Repository - Found affiliates:', affiliates.length);
+        console.log('Repository - Total count:', total);
+
+        if (affiliates.length > 0) {
+            console.log('Repository - First affiliate:', {
+                id: affiliates[0]._id?.toString(),
+                status: affiliates[0].status,
+                referralCode: affiliates[0].referralCode,
+                user: affiliates[0].user ? {
+                    id: affiliates[0].user._id?.toString(),
+                    name: affiliates[0].user.profile?.name,
+                    email: affiliates[0].user.profile?.email,
+                    mobile: affiliates[0].user.mobile
+                } : 'Not populated',
+                paymentMethod: affiliates[0].paymentMethod,
+                mobileBanking: affiliates[0].mobileBanking,
+                bankDetails: affiliates[0].bankDetails
+            });
+        } else {
+            console.log('Repository - No affiliates found with query:', query);
+        }
 
         return {
             affiliates,
@@ -182,6 +231,20 @@ const suspend = async (affiliateId) => {
     }
 };
 
+/**
+ * Delete affiliate by ID
+ * @param {String} affiliateId - Affiliate ID
+ * @returns {Promise<Object|null>} - Deleted affiliate or null
+ */
+const deleteById = async (affiliateId) => {
+    try {
+        const affiliate = await Affiliate.findByIdAndDelete(affiliateId);
+        return affiliate;
+    } catch (error) {
+        throw new Error(`Failed to delete affiliate: ${error.message}`);
+    }
+};
+
 module.exports = {
     create,
     findByUser,
@@ -190,6 +253,7 @@ module.exports = {
     update,
     approve,
     reject,
-    suspend
+    suspend,
+    deleteById
 };
 

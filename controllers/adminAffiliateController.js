@@ -13,39 +13,83 @@ exports.getAllAffiliates = async (req, res, next) => {
     try {
         const { status, search, page = 1, limit = 10 } = req.query;
 
+        console.log('Admin getAllAffiliates - Query params:', { status, search, page, limit });
+
         const result = await adminAffiliateService.getAllAffiliates(
             { status, search },
             page,
             limit
         );
 
+        console.log('Service result:', {
+            affiliatesCount: result.affiliates?.length || 0,
+            pagination: result.pagination
+        });
+
+        const mappedAffiliates = result.affiliates.map(a => {
+            // Handle user data - check if populated or just ObjectId
+            let userData = {
+                id: null,
+                name: 'N/A',
+                email: null,
+                mobile: null
+            };
+
+            if (a.user) {
+                if (typeof a.user === 'object' && a.user._id) {
+                    // User is populated
+                    userData.id = a.user._id.toString();
+                    userData.name = a.user.profile?.name || a.user.name || 'N/A';
+                    userData.email = a.user.profile?.email || a.user.email || null;
+                    userData.mobile = a.user.mobile || null;
+                } else if (typeof a.user === 'string' || (a.user && a.user.toString)) {
+                    // User is just ObjectId
+                    userData.id = a.user.toString();
+                    userData.name = 'User ID: ' + userData.id;
+                }
+            }
+
+            const mapped = {
+                id: a._id?.toString() || a.id?.toString() || 'unknown',
+                user: userData,
+                referralCode: a.referralCode || 'N/A',
+                referralLink: a.referralLink || 'N/A',
+                status: a.status || 'pending',
+                commissionRate: a.commissionRate || 10,
+                paymentMethod: a.paymentMethod || 'bank',
+                bankDetails: a.bankDetails || null,
+                mobileBanking: a.mobileBanking || null,
+                totalReferrals: a.totalReferrals || 0,
+                totalSales: a.totalSales || 0,
+                totalCommission: a.totalCommission || 0,
+                paidCommission: a.paidCommission || 0,
+                pendingCommission: a.pendingCommission || 0,
+                approvedAt: a.approvedAt || null,
+                createdAt: a.createdAt || new Date()
+            };
+
+            console.log('Mapped affiliate:', {
+                id: mapped.id,
+                status: mapped.status,
+                userName: mapped.user.name,
+                referralCode: mapped.referralCode
+            });
+
+            return mapped;
+        });
+
+        console.log('Mapped affiliates count:', mappedAffiliates.length);
+
         res.status(200).json({
             success: true,
             message: 'Affiliates retrieved successfully',
             data: {
-                affiliates: result.affiliates.map(a => ({
-                    id: a._id,
-                    user: {
-                        id: a.user._id,
-                        name: a.user.profile?.name,
-                        email: a.user.profile?.email || a.user.mobile
-                    },
-                    referralCode: a.referralCode,
-                    referralLink: a.referralLink,
-                    status: a.status,
-                    commissionRate: a.commissionRate,
-                    totalReferrals: a.totalReferrals,
-                    totalSales: a.totalSales,
-                    totalCommission: a.totalCommission,
-                    paidCommission: a.paidCommission,
-                    pendingCommission: a.pendingCommission,
-                    approvedAt: a.approvedAt,
-                    createdAt: a.createdAt
-                })),
+                affiliates: mappedAffiliates,
                 pagination: result.pagination
             }
         });
     } catch (error) {
+        console.error('Error in getAllAffiliates controller:', error);
         next(error);
     }
 };

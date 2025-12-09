@@ -246,6 +246,81 @@ const getActiveCoupons = async (limit = 5) => {
     };
 };
 
+/**
+ * Generate unique coupon code
+ * @returns {Promise<String>} - Unique coupon code
+ */
+const generateCouponCode = async () => {
+    const crypto = require('crypto');
+    let code;
+    let isUnique = false;
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    while (!isUnique && attempts < maxAttempts) {
+        code = crypto.randomBytes(4).toString('hex').toUpperCase().substring(0, 8); // 8 characters
+        const existing = await couponRepository.findByCode(code);
+        if (!existing) {
+            isUnique = true;
+        }
+        attempts++;
+    }
+
+    if (!isUnique) {
+        throw new Error('Failed to generate unique coupon code');
+    }
+    return code;
+};
+
+/**
+ * Create affiliate coupon
+ * @param {String} affiliateId - Affiliate ID
+ * @param {Object} couponData - Coupon data
+ * @returns {Promise<Object>} - Created coupon
+ */
+const createAffiliateCoupon = async (affiliateId, couponData) => {
+    const code = await generateCouponCode();
+    const dataToCreate = {
+        ...couponData,
+        code,
+        affiliate: affiliateId,
+        isActive: true, // Affiliate coupons are active by default
+        usedCount: 0,
+        // Ensure usageLimit is at least 1
+        usageLimit: Math.max(1, couponData.usageLimit || 1),
+        // Ensure value is positive
+        value: Math.max(0, couponData.value || 0),
+        // Ensure minPurchase is non-negative
+        minPurchase: Math.max(0, couponData.minPurchase || 0),
+        // Ensure maxDiscount is non-negative if set
+        maxDiscount: couponData.maxDiscount !== null ? Math.max(0, couponData.maxDiscount) : null,
+    };
+
+    // Basic validation (more detailed validation can be added)
+    if (dataToCreate.type === 'percentage' && dataToCreate.value > 100) {
+        throw new Error('Percentage discount cannot exceed 100%');
+    }
+    if (dataToCreate.expiryDate && new Date(dataToCreate.expiryDate) < new Date()) {
+        throw new Error('Expiry date cannot be in the past');
+    }
+
+    const coupon = await couponRepository.create(dataToCreate);
+    return coupon;
+};
+
+/**
+ * Get affiliate coupons
+ * @param {String} affiliateId - Affiliate ID
+ * @param {Number} page - Page number
+ * @param {Number} limit - Items per page
+ * @returns {Promise<Object>} - Coupons with pagination
+ */
+const getAffiliateCoupons = async (affiliateId, page = 1, limit = 10) => {
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 10));
+    return await couponRepository.findByAffiliate(affiliateId, {}, pageNum, limitNum);
+};
+
 module.exports = {
     createCoupon,
     getAllCoupons,
@@ -256,6 +331,8 @@ module.exports = {
     updateCoupon,
     deleteCoupon,
     incrementCouponUsage,
-    getActiveCoupons
+    getActiveCoupons,
+    createAffiliateCoupon,
+    getAffiliateCoupons
 };
 

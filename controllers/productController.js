@@ -4,6 +4,7 @@
  */
 
 const productService = require('../services/productService');
+const axios = require('axios');
 
 /**
  * Get all products
@@ -203,6 +204,42 @@ exports.searchProducts = async (req, res, next) => {
 };
 
 /**
+ * Get all digital products with PDFs (Admin only)
+ * GET /api/products/admin/digital
+ */
+exports.getDigitalProducts = async (req, res, next) => {
+    try {
+        const { page = 1, limit = 20 } = req.query;
+        const finalLimit = parseInt(limit) || 20;
+
+        const result = await productService.getDigitalProducts(page, finalLimit);
+
+        const backendPagination = result.pagination || {
+            page: parseInt(page) || 1,
+            limit: finalLimit,
+            total: result.products?.length || 0,
+            pages: 1
+        };
+
+        const pagination = {
+            currentPage: backendPagination.page || parseInt(page) || 1,
+            totalPages: backendPagination.pages || Math.ceil((backendPagination.total || 0) / finalLimit) || 1,
+            totalItems: backendPagination.total || result.products?.length || 0,
+            itemsPerPage: backendPagination.limit || finalLimit
+        };
+
+        res.status(200).json({
+            success: true,
+            message: 'Digital products retrieved successfully',
+            data: result.products || [],
+            pagination: pagination
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
  * Get products by category
  * GET /api/products/category/:categoryId
  */
@@ -239,6 +276,105 @@ exports.getProductsByCategory = async (req, res, next) => {
 };
 
 /**
+ * Get last updated products for home page
+ * GET /api/products/sections/last-updates
+ */
+exports.getLastUpdates = async (req, res, next) => {
+    try {
+        const { limit = 3 } = req.query;
+        const products = await productService.getLastUpdates(parseInt(limit));
+        res.status(200).json({
+            success: true,
+            message: 'Last updated products retrieved successfully',
+            data: products
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Get coming soon products for home page
+ * GET /api/products/sections/coming-soon
+ */
+exports.getComingSoon = async (req, res, next) => {
+    try {
+        const { limit = 3 } = req.query;
+        const products = await productService.getComingSoon(parseInt(limit));
+        res.status(200).json({
+            success: true,
+            message: 'Coming soon products retrieved successfully',
+            data: products
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Get popular reader products for home page
+ * GET /api/products/sections/popular-reader
+ */
+exports.getPopularReader = async (req, res, next) => {
+    try {
+        const { limit = 3 } = req.query;
+        const products = await productService.getPopularReader(parseInt(limit));
+        res.status(200).json({
+            success: true,
+            message: 'Popular reader products retrieved successfully',
+            data: products
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Get frequently downloaded products for home page
+ * GET /api/products/sections/frequently-downloaded
+ */
+exports.getFrequentlyDownloaded = async (req, res, next) => {
+    try {
+        const { limit = 3 } = req.query;
+        const products = await productService.getFrequentlyDownloaded(parseInt(limit));
+        res.status(200).json({
+            success: true,
+            message: 'Frequently downloaded products retrieved successfully',
+            data: products
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Get user's favorited products for home page
+ * GET /api/products/sections/favourited
+ */
+exports.getFavourited = async (req, res, next) => {
+    try {
+        const { limit = 3 } = req.query;
+        const userId = req.userId; // From auth middleware
+
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'Authentication required'
+            });
+        }
+
+        const products = await productService.getFavourited(userId, parseInt(limit));
+        res.status(200).json({
+            success: true,
+            message: 'Favourited products retrieved successfully',
+            data: products
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
  * Get featured products
  * GET /api/products/featured
  */
@@ -253,6 +389,99 @@ exports.getFeaturedProducts = async (req, res, next) => {
             data: products
         });
     } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Proxy PDF file to avoid CORS issues
+ * GET /api/products/:id/pdf-proxy
+ */
+exports.proxyPDF = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+
+        if (!id) {
+            return res.status(400).json({
+                success: false,
+                message: 'Product ID is required'
+            });
+        }
+
+        // Get product - use repository directly to avoid isActive check
+        const productRepository = require('../repositories/productRepository');
+        let product;
+        try {
+            product = await productRepository.findById(id);
+        } catch (error) {
+            console.error('Error fetching product:', error.message);
+            return res.status(404).json({
+                success: false,
+                message: 'Product not found'
+            });
+        }
+
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: 'Product not found'
+            });
+        }
+
+        if (!product.digitalFile) {
+            return res.status(404).json({
+                success: false,
+                message: 'PDF not found for this product'
+            });
+        }
+
+        const pdfURL = product.digitalFile;
+        console.log('Proxying PDF:', pdfURL);
+
+        // If it's an external URL, proxy it through the backend
+        if (pdfURL.startsWith('http://') || pdfURL.startsWith('https://')) {
+            try {
+                // Download PDF from external URL (server-side, no CORS issues)
+                const response = await axios.get(pdfURL, {
+                    responseType: 'arraybuffer',
+                    timeout: 30000,
+                    headers: {
+                        'User-Agent': 'eBook-Server/1.0'
+                    }
+                });
+
+                const pdfBuffer = Buffer.from(response.data);
+
+                // Set CORS headers
+                res.setHeader('Access-Control-Allow-Origin', '*');
+                res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+                res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+                // Set PDF headers
+                res.setHeader('Content-Type', 'application/pdf');
+                res.setHeader('Content-Disposition', 'inline; filename="ebook.pdf"');
+                res.setHeader('Content-Length', pdfBuffer.length);
+                res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+
+                // Send PDF buffer
+                res.send(pdfBuffer);
+            } catch (error) {
+                console.error('Error proxying PDF:', error.message);
+                console.error('Error details:', error.response?.status, error.response?.statusText);
+                return res.status(500).json({
+                    success: false,
+                    message: 'Failed to load PDF: ' + (error.message || 'Unknown error')
+                });
+            }
+        } else {
+            // For local files, return 404 (should use different endpoint)
+            return res.status(404).json({
+                success: false,
+                message: 'Local file access not supported through this endpoint'
+            });
+        }
+    } catch (error) {
+        console.error('Unexpected error in proxyPDF:', error);
         next(error);
     }
 };

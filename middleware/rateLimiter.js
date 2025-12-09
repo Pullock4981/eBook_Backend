@@ -48,17 +48,26 @@ const authLimiter = rateLimit({
 
 /**
  * OTP request rate limiter
- * 3 OTP requests per hour per IP
+ * 3 OTP requests per hour per IP (production)
+ * Higher limit for development
  */
 const otpLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
-    max: 3, // Limit each IP to 3 OTP requests per hour
+    max: process.env.NODE_ENV === 'production' ? 3 : 100, // Higher limit for development
     message: {
         success: false,
         message: 'Too many OTP requests. Please try again after 1 hour.'
     },
     standardHeaders: true,
     legacyHeaders: false,
+    skip: (req) => {
+        // Skip rate limiting for localhost in development
+        if (process.env.NODE_ENV !== 'production') {
+            const ip = req.ip || req.connection?.remoteAddress || req.socket?.remoteAddress;
+            return ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1' || ip?.includes('127.0.0.1');
+        }
+        return false;
+    },
 });
 
 /**

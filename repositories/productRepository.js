@@ -249,6 +249,111 @@ const incrementViews = async (id) => {
     );
 };
 
+/**
+ * Get last updated products
+ * @param {Number} limit - Number of products to return
+ * @returns {Promise<Array>} - Array of products
+ */
+const getLastUpdates = async (limit = 3) => {
+    return await Product.find({ isActive: true, isLastUpdate: true })
+        .populate('category', 'name slug')
+        .populate('subcategory', 'name slug')
+        .sort({ updatedAt: -1 })
+        .limit(parseInt(limit));
+};
+
+/**
+ * Get coming soon products
+ * @param {Number} limit - Number of products to return
+ * @returns {Promise<Array>} - Array of products
+ */
+const getComingSoon = async (limit = 3) => {
+    return await Product.find({ isActive: true, isComingSoon: true })
+        .populate('category', 'name slug')
+        .populate('subcategory', 'name slug')
+        .sort({ releaseDate: 1, createdAt: -1 })
+        .limit(parseInt(limit));
+};
+
+/**
+ * Get popular reader products (sorted by readerViews)
+ * @param {Number} limit - Number of products to return
+ * @returns {Promise<Array>} - Array of products
+ */
+const getPopularReader = async (limit = 3) => {
+    return await Product.find({ isActive: true, isPopularReader: true })
+        .populate('category', 'name slug')
+        .populate('subcategory', 'name slug')
+        .sort({ readerViews: -1, views: -1 })
+        .limit(parseInt(limit));
+};
+
+/**
+ * Get frequently downloaded products
+ * @param {Number} limit - Number of products to return
+ * @returns {Promise<Array>} - Array of products
+ */
+const getFrequentlyDownloaded = async (limit = 3) => {
+    return await Product.find({ isActive: true, type: 'digital' })
+        .populate('category', 'name slug')
+        .populate('subcategory', 'name slug')
+        .sort({ downloadCount: -1, sales: -1 })
+        .limit(parseInt(limit));
+};
+
+/**
+ * Get user's favorited products
+ * @param {String} userId - User ID
+ * @param {Number} limit - Number of products to return
+ * @returns {Promise<Array>} - Array of products
+ */
+const getFavourited = async (userId, limit = 3) => {
+    // Note: This requires a UserFavorite model or similar
+    // For now, we'll return products sorted by favoriteCount
+    // In future, implement proper user favorites tracking
+    return await Product.find({ isActive: true })
+        .populate('category', 'name slug')
+        .populate('subcategory', 'name slug')
+        .sort({ favoriteCount: -1, createdAt: -1 })
+        .limit(parseInt(limit));
+};
+
+/**
+ * Get all digital products with PDFs (Admin)
+ * @param {Number} page - Page number
+ * @param {Number} limit - Items per page
+ * @returns {Promise<Object>} - Products with pagination
+ */
+const getDigitalProducts = async (page = 1, limit = 20) => {
+    const skip = (page - 1) * limit;
+
+    const query = {
+        type: 'digital',
+        digitalFile: { $exists: true, $ne: null }
+    };
+
+    const [products, total] = await Promise.all([
+        Product.find(query)
+            .populate('category', 'name slug')
+            .populate('subcategory', 'name slug')
+            .select('name slug digitalFile fileSize images isActive createdAt updatedAt sales downloadCount')
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit),
+        Product.countDocuments(query)
+    ]);
+
+    return {
+        products,
+        pagination: {
+            page,
+            limit,
+            total,
+            pages: Math.ceil(total / limit)
+        }
+    };
+};
+
 module.exports = {
     create,
     getAll,
@@ -260,6 +365,12 @@ module.exports = {
     findByCategory,
     getFeatured,
     updateStock,
-    incrementViews
+    incrementViews,
+    getLastUpdates,
+    getComingSoon,
+    getPopularReader,
+    getFrequentlyDownloaded,
+    getFavourited,
+    getDigitalProducts
 };
 

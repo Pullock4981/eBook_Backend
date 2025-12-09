@@ -29,7 +29,7 @@ const findByToken = async (token) => {
         return await eBookAccess.findOne({ accessToken: token })
             .populate('user', 'profile.name profile.email mobile')
             .populate('order', 'orderId')
-            .populate('product', 'title slug');
+            .populate('product', 'name slug digitalFile images fileSize');
     } catch (error) {
         throw new Error(`Failed to find eBook access: ${error.message}`);
     }
@@ -50,7 +50,7 @@ const findByUserAndProduct = async (userId, productId) => {
         })
             .populate('user', 'profile.name profile.email mobile')
             .populate('order', 'orderId')
-            .populate('product', 'title slug digitalFile');
+            .populate('product', 'name slug digitalFile images fileSize');
     } catch (error) {
         throw new Error(`Failed to find eBook access: ${error.message}`);
     }
@@ -65,7 +65,7 @@ const findByUser = async (userId) => {
     try {
         return await eBookAccess.find({ user: userId })
             .populate('order', 'orderId createdAt')
-            .populate('product', 'title slug thumbnail')
+            .populate('product', 'name slug images digitalFile fileSize')
             .sort({ createdAt: -1 });
     } catch (error) {
         throw new Error(`Failed to find user eBook access: ${error.message}`);
@@ -80,7 +80,7 @@ const findByUser = async (userId) => {
 const findByOrder = async (orderId) => {
     try {
         return await eBookAccess.find({ order: orderId })
-            .populate('product', 'title slug');
+            .populate('product', 'name slug digitalFile');
     } catch (error) {
         throw new Error(`Failed to find order eBook access: ${error.message}`);
     }

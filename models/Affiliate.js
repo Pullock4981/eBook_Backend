@@ -13,18 +13,16 @@ const affiliateSchema = new mongoose.Schema({
         required: [true, 'User is required'],
         unique: true
     },
-    // Unique referral code
+    // Unique referral code (auto-generated in pre-save hook)
     referralCode: {
         type: String,
-        required: true,
         unique: true,
         uppercase: true,
         trim: true
     },
-    // Referral link
+    // Referral link (auto-generated in pre-save hook)
     referralLink: {
         type: String,
-        required: true,
         unique: true
     },
     // Status
@@ -134,33 +132,56 @@ affiliateSchema.statics.generateReferralLink = function (referralCode) {
 
 // Pre-save hook to generate referral code and link
 affiliateSchema.pre('save', async function (next) {
-    // Generate referral code if not exists
-    if (!this.referralCode) {
-        let code;
-        let isUnique = false;
+    try {
+        // Generate referral code if not exists
+        if (!this.referralCode) {
+            let code;
+            let isUnique = false;
+            let attempts = 0;
+            const maxAttempts = 10;
 
-        while (!isUnique) {
-            code = crypto.randomBytes(4).toString('hex').toUpperCase();
-            const existing = await mongoose.model('Affiliate').findOne({ referralCode: code });
-            if (!existing) {
-                isUnique = true;
+            while (!isUnique && attempts < maxAttempts) {
+                code = crypto.randomBytes(4).toString('hex').toUpperCase();
+                const existing = await this.constructor.findOne({ referralCode: code });
+                if (!existing) {
+                    isUnique = true;
+                }
+                attempts++;
             }
+
+            if (!isUnique) {
+                return next(new Error('Failed to generate unique referral code'));
+            }
+
+            this.referralCode = code;
         }
 
-        this.referralCode = code;
-    }
+        // Generate referral link if not exists
+        if (!this.referralLink && this.referralCode) {
+            this.referralLink = affiliateSchema.statics.generateReferralLink(this.referralCode);
+        }
 
-    // Generate referral link if not exists
-    if (!this.referralLink) {
-        this.referralLink = affiliateSchema.statics.generateReferralLink(this.referralCode);
-    }
+        // Set default commission rate from env if not set
+        if (!this.commissionRate) {
+            this.commissionRate = parseFloat(process.env.AFFILIATE_COMMISSION_RATE || '10');
+        }
 
-    // Set default commission rate from env if not set
-    if (!this.commissionRate) {
-        this.commissionRate = parseFloat(process.env.AFFILIATE_COMMISSION_RATE || '10');
-    }
+        // Ensure referralCode and referralLink are set before saving
+        if (!this.referralCode || !this.referralLink) {
+            return next(new Error('Failed to generate referral code or link'));
+        }
 
-    next();
+        next();
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Post-save validation to ensure required fields are set
+affiliateSchema.post('save', function (doc) {
+    if (!doc.referralCode || !doc.referralLink) {
+        throw new Error('Affiliate saved without referralCode or referralLink');
+    }
 });
 
 // Method to calculate commission

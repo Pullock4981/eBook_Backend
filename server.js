@@ -3,6 +3,16 @@
  * Express server setup with middleware configuration
  */
 
+// Suppress punycode deprecation warning (DEP0040)
+// This warning comes from dependencies like nodemailer, axios, etc.
+// It's safe to suppress as it doesn't affect functionality
+process.removeAllListeners('warning');
+process.on('warning', (warning) => {
+    if (warning.name !== 'DeprecationWarning' || !warning.message.includes('punycode')) {
+        console.warn(warning.name, warning.message);
+    }
+});
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -92,6 +102,39 @@ app.get('/api/health', async (req, res) => {
     });
 });
 
+// Manual database reconnection endpoint (for admin/testing)
+app.post('/api/admin/reconnect-db', async (req, res) => {
+    const mongoose = require('mongoose');
+    const connectDB = require('./config/database');
+
+    try {
+        // Close existing connection if any
+        if (mongoose.connection.readyState !== 0) {
+            await mongoose.connection.close();
+        }
+
+        // Reconnect
+        await connectDB();
+
+        res.json({
+            success: true,
+            message: 'Database reconnected successfully',
+            database: {
+                state: 'connected',
+                isConnected: true,
+                host: mongoose.connection.host,
+                name: mongoose.connection.name
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to reconnect database',
+            error: error.message
+        });
+    }
+});
+
 // ==================== API Routes ====================
 // Authentication routes (Part 6)
 app.use('/api/auth', authRoutes);
@@ -141,16 +184,28 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 
 // Connect to database and start server
+// Server will start even if DB connection fails (for better error handling)
 connectDB()
     .then(() => {
-        app.listen(PORT, () => {
-            console.log(`✅ Server is running on port ${PORT}`);
-            console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-            console.log(`📡 API URL: http://localhost:${PORT}`);
-        });
+        startServer();
     })
     .catch((error) => {
         console.error('❌ Database connection failed:', error.message);
-        process.exit(1);
+        console.warn('⚠️  Server will start without database connection.');
+        console.warn('⚠️  API endpoints will return errors until database is connected.');
+        console.warn('💡 Please check your MONGODB_URI in .env file');
+        console.warn('💡 For local MongoDB: mongodb://localhost:27017/ebook_db');
+        console.warn('💡 For MongoDB Atlas: Check your IP whitelist and connection string');
+        // Start server anyway to show proper error messages
+        startServer();
     });
+
+function startServer() {
+    app.listen(PORT, () => {
+        console.log(`✅ Server is running on port ${PORT}`);
+        console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+        console.log(`📡 API URL: http://localhost:${PORT}`);
+        console.log(`🔍 Health check: http://localhost:${PORT}/api/health`);
+    });
+}
 

@@ -24,9 +24,11 @@ exports.getUserEBooks = async (req, res, next) => {
                     accessToken: access.accessToken,
                     product: {
                         id: access.product._id,
-                        title: access.product.title,
+                        name: access.product.name,
                         slug: access.product.slug,
-                        thumbnail: access.product.thumbnail
+                        images: access.product.images || [],
+                        digitalFile: access.product.digitalFile,
+                        fileSize: access.product.fileSize
                     },
                     order: {
                         id: access.order._id,
@@ -78,8 +80,9 @@ exports.geteBookAccess = async (req, res, next) => {
                 accessToken: access.accessToken,
                 product: {
                     id: access.product._id,
-                    title: access.product.title,
-                    slug: access.product.slug
+                    name: access.product.name,
+                    slug: access.product.slug,
+                    digitalFile: access.product.digitalFile
                 },
                 tokenExpiry: access.tokenExpiry,
                 lastAccess: access.lastAccess

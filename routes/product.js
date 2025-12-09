@@ -15,9 +15,23 @@ router.get('/search', productController.searchProducts);
 router.get('/featured', productController.getFeaturedProducts);
 router.get('/category/:categoryId', productController.getProductsByCategory);
 router.get('/slug/:slug', productController.getProductBySlug);
+
+// Home page sections (public)
+router.get('/sections/last-updates', productController.getLastUpdates);
+router.get('/sections/coming-soon', productController.getComingSoon);
+router.get('/sections/popular-reader', productController.getPopularReader);
+router.get('/sections/frequently-downloaded', productController.getFrequentlyDownloaded);
+
+// Home page sections (authenticated)
+router.get('/sections/favourited', authenticate, productController.getFavourited);
+
+// PDF proxy route (must be before /:id route)
+router.get('/:id/pdf-proxy', productController.proxyPDF);
+
 router.get('/:id', productController.getProductById);
 
 // Admin routes (require authentication and admin role)
+router.get('/admin/digital', authenticate, requireAdmin, productController.getDigitalProducts);
 router.post('/', authenticate, requireAdmin, productController.createProduct);
 router.put('/:id', authenticate, requireAdmin, productController.updateProduct);
 router.delete('/:id', authenticate, requireAdmin, productController.deleteProduct);

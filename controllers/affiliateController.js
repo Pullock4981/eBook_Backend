@@ -4,6 +4,7 @@
  */
 
 const affiliateService = require('../services/affiliateService');
+const couponService = require('../services/couponService');
 
 /**
  * Register as affiliate
@@ -44,7 +45,15 @@ exports.registerAsAffiliate = async (req, res, next) => {
 exports.getAffiliateProfile = async (req, res, next) => {
     try {
         const userId = req.userId;
+        console.log('getAffiliateProfile - userId:', userId);
+
         const affiliate = await affiliateService.getAffiliateByUser(userId);
+
+        console.log('getAffiliateProfile - affiliate found:', affiliate ? 'Yes' : 'No');
+        if (affiliate) {
+            console.log('getAffiliateProfile - affiliate status:', affiliate.status);
+            console.log('getAffiliateProfile - affiliate referralCode:', affiliate.referralCode);
+        }
 
         res.status(200).json({
             success: true,
@@ -68,6 +77,15 @@ exports.getAffiliateProfile = async (req, res, next) => {
             }
         });
     } catch (error) {
+        console.log('getAffiliateProfile - error:', error.message);
+        // If affiliate not found, return 404 but don't throw error (user is not affiliate)
+        if (error.message && error.message.includes('not found')) {
+            return res.status(404).json({
+                success: false,
+                message: 'Affiliate profile not found',
+                data: null
+            });
+        }
         next(error);
     }
 };
@@ -226,6 +244,129 @@ exports.updatePaymentDetails = async (req, res, next) => {
                     mobileBanking: affiliate.mobileBanking,
                     paymentMethod: affiliate.paymentMethod
                 }
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Cancel affiliate registration
+ * DELETE /api/affiliates/cancel
+ */
+exports.cancelAffiliateRegistration = async (req, res, next) => {
+    try {
+        const userId = req.userId;
+
+        await affiliateService.cancelAffiliateRegistration(userId);
+
+        res.status(200).json({
+            success: true,
+            message: 'Affiliate registration cancelled successfully',
+            data: null
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Generate affiliate coupon
+ * POST /api/affiliates/coupons
+ */
+exports.generateCoupon = async (req, res, next) => {
+    try {
+        const userId = req.userId;
+        const couponData = req.body;
+
+        // Get affiliate by user
+        const affiliate = await affiliateService.getAffiliateByUser(userId);
+        if (!affiliate) {
+            return res.status(404).json({
+                success: false,
+                message: 'Affiliate account not found'
+            });
+        }
+
+        // Check if affiliate is active
+        if (affiliate.status !== 'active') {
+            return res.status(403).json({
+                success: false,
+                message: 'Only active affiliates can generate coupons'
+            });
+        }
+
+        // Create coupon
+        const coupon = await couponService.createAffiliateCoupon(affiliate._id, couponData);
+
+        res.status(201).json({
+            success: true,
+            message: 'Coupon generated successfully',
+            data: {
+                coupon: {
+                    id: coupon._id,
+                    code: coupon.code,
+                    type: coupon.type,
+                    value: coupon.value,
+                    usageLimit: coupon.usageLimit,
+                    usedCount: coupon.usedCount,
+                    minPurchase: coupon.minPurchase,
+                    maxDiscount: coupon.maxDiscount,
+                    expiryDate: coupon.expiryDate,
+                    description: coupon.description,
+                    oneTimeUse: coupon.oneTimeUse,
+                    isActive: coupon.isActive,
+                    createdAt: coupon.createdAt
+                }
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Get affiliate coupons
+ * GET /api/affiliates/coupons
+ */
+exports.getCoupons = async (req, res, next) => {
+    try {
+        const userId = req.userId;
+        const { page = 1, limit = 10 } = req.query;
+
+        // Get affiliate by user
+        const affiliate = await affiliateService.getAffiliateByUser(userId);
+        if (!affiliate) {
+            return res.status(404).json({
+                success: false,
+                message: 'Affiliate account not found'
+            });
+        }
+
+        // Get coupons
+        const result = await couponService.getAffiliateCoupons(affiliate._id, page, limit);
+
+        res.status(200).json({
+            success: true,
+            message: 'Coupons retrieved successfully',
+            data: {
+                coupons: result.coupons.map(c => ({
+                    id: c._id,
+                    code: c.code,
+                    type: c.type,
+                    value: c.value,
+                    usageLimit: c.usageLimit,
+                    usedCount: c.usedCount,
+                    minPurchase: c.minPurchase,
+                    maxDiscount: c.maxDiscount,
+                    expiryDate: c.expiryDate,
+                    description: c.description,
+                    oneTimeUse: c.oneTimeUse,
+                    isActive: c.isActive,
+                    createdAt: c.createdAt
+                })),
+                pagination: result.pagination
             }
         });
     } catch (error) {
