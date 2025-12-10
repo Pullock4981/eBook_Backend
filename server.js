@@ -82,7 +82,9 @@ app.get('/', (req, res) => {
 // API status route with database status
 app.get('/api/health', async (req, res) => {
     const mongoose = require('mongoose');
-    const dbState = mongoose.connection.readyState;
+    const connectDB = require('./config/database');
+
+    let dbState = mongoose.connection.readyState;
     const dbStates = {
         0: 'disconnected',
         1: 'connected',
@@ -90,17 +92,116 @@ app.get('/api/health', async (req, res) => {
         3: 'disconnecting'
     };
 
+    // If disconnected and MONGODB_URI is set, try to connect
+    if (dbState === 0 && process.env.MONGODB_URI) {
+        try {
+            console.log('🔄 Health check: Attempting database connection...');
+            await connectDB();
+            dbState = mongoose.connection.readyState;
+        } catch (error) {
+            console.error('❌ Health check: Database connection failed:', error.message);
+        }
+    }
+
     res.json({
         success: true,
         status: 'healthy',
         database: {
             state: dbStates[dbState] || 'unknown',
             isConnected: dbState === 1,
-            host: mongoose.connection.host,
-            name: mongoose.connection.name
+            host: mongoose.connection.host || null,
+            name: mongoose.connection.name || null,
+            readyState: dbState
         },
         timestamp: new Date().toISOString()
     });
+});
+
+// Database connection test endpoint (public for debugging)
+// Must be defined BEFORE middleware to avoid connection check
+app.get('/api/test/db-connection', async (req, res) => {
+    const mongoose = require('mongoose');
+    const connectDB = require('./config/database');
+
+    const result = {
+        success: false,
+        message: '',
+        database: {
+            state: 'unknown',
+            isConnected: false,
+            readyState: mongoose.connection.readyState,
+            host: null,
+            name: null
+        },
+        connectionString: {
+            exists: !!process.env.MONGODB_URI,
+            hasDatabase: process.env.MONGODB_URI?.includes('/ebook_db'),
+            length: process.env.MONGODB_URI?.length || 0
+        },
+        error: null,
+        timestamp: new Date().toISOString()
+    };
+
+    try {
+        // Check if MONGODB_URI is set
+        if (!process.env.MONGODB_URI) {
+            result.message = 'MONGODB_URI is not set in environment variables';
+            return res.status(500).json(result);
+        }
+
+        // Check current state
+        if (mongoose.connection.readyState === 1) {
+            result.success = true;
+            result.message = 'Database already connected';
+            result.database = {
+                state: 'connected',
+                isConnected: true,
+                readyState: 1,
+                host: mongoose.connection.host,
+                name: mongoose.connection.name
+            };
+            return res.json(result);
+        }
+
+        // Try to connect
+        console.log('🔄 Test endpoint: Attempting database connection...');
+        await connectDB();
+
+        // Check connection after attempt
+        if (mongoose.connection.readyState === 1) {
+            result.success = true;
+            result.message = 'Database connected successfully';
+            result.database = {
+                state: 'connected',
+                isConnected: true,
+                readyState: 1,
+                host: mongoose.connection.host,
+                name: mongoose.connection.name
+            };
+        } else {
+            result.message = 'Connection attempt completed but state is not connected';
+            result.database.readyState = mongoose.connection.readyState;
+        }
+
+        res.json(result);
+    } catch (error) {
+        result.message = 'Database connection failed';
+        result.error = error.message;
+        result.database.readyState = mongoose.connection.readyState;
+
+        // Provide helpful error details
+        if (error.message.includes('authentication failed')) {
+            result.error = 'Authentication failed - Check username and password';
+        } else if (error.message.includes('ENOTFOUND')) {
+            result.error = 'Could not resolve MongoDB host - Check connection string';
+        } else if (error.message.includes('IP')) {
+            result.error = 'IP not whitelisted - Add 0.0.0.0/0 to MongoDB Atlas Network Access';
+        } else if (error.message.includes('timeout')) {
+            result.error = 'Connection timeout - Check network and MongoDB Atlas settings';
+        }
+
+        res.status(500).json(result);
+    }
 });
 
 // Manual database reconnection endpoint (for admin/testing)
@@ -131,17 +232,22 @@ app.post('/api/admin/reconnect-db', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to reconnect database',
-            error: error.message
+            error: error.message,
+            details: process.env.NODE_ENV === 'development' ? error.stack : undefined
         });
     }
 });
 
 // ==================== API Routes ====================
-// Ensure database connection for all API routes (except health check and admin reconnect)
-// Health check and reconnect routes are excluded to allow checking DB status
+// Ensure database connection for all API routes (except health check, admin reconnect, and test endpoints)
+// Health check, reconnect, and test routes are excluded to allow checking DB status
 app.use('/api', (req, res, next) => {
-    // Skip DB connection check for health and reconnect endpoints
-    if (req.path === '/health' || req.path === '/admin/reconnect-db') {
+    // Skip DB connection check for health, reconnect, and test endpoints
+    const path = req.path || req.originalUrl?.replace('/api', '') || '';
+    if (path === '/health' ||
+        path === '/admin/reconnect-db' ||
+        path === '/test/db-connection' ||
+        req.originalUrl?.includes('/test/db-connection')) {
         return next();
     }
     return ensureDBConnection(req, res, next);
