@@ -184,21 +184,35 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 
 // Connect to database and start server
-// Server will start even if DB connection fails (for better error handling)
-connectDB()
-    .then(() => {
-        startServer();
-    })
-    .catch((error) => {
-        console.error('❌ Database connection failed:', error.message);
-        console.warn('⚠️  Server will start without database connection.');
-        console.warn('⚠️  API endpoints will return errors until database is connected.');
-        console.warn('💡 Please check your MONGODB_URI in .env file');
-        console.warn('💡 For local MongoDB: mongodb://localhost:27017/ebook_db');
-        console.warn('💡 For MongoDB Atlas: Check your IP whitelist and connection string');
-        // Start server anyway to show proper error messages
-        startServer();
-    });
+// Only start server if running directly (not as serverless function)
+// Vercel will use the exported app directly without starting a server
+if (require.main === module) {
+    // Running directly (local development)
+    connectDB()
+        .then(() => {
+            startServer();
+        })
+        .catch((error) => {
+            console.error('❌ Database connection failed:', error.message);
+            console.warn('⚠️  Server will start without database connection.');
+            console.warn('⚠️  API endpoints will return errors until database is connected.');
+            console.warn('💡 Please check your MONGODB_URI in .env file');
+            console.warn('💡 For local MongoDB: mongodb://localhost:27017/ebook_db');
+            console.warn('💡 For MongoDB Atlas: Check your IP whitelist and connection string');
+            // Start server anyway to show proper error messages
+            startServer();
+        });
+} else {
+    // Being imported (Vercel serverless)
+    // Connect to database but don't start server
+    connectDB()
+        .then(() => {
+            console.log('✅ Database connected (Serverless)');
+        })
+        .catch((error) => {
+            console.error('❌ Database connection failed (Serverless):', error.message);
+        });
+}
 
 function startServer() {
     app.listen(PORT, () => {
@@ -208,4 +222,9 @@ function startServer() {
         console.log(`🔍 Health check: http://localhost:${PORT}/api/health`);
     });
 }
+
+// Export app for Vercel serverless functions
+// For local development, the server will start normally
+// For Vercel, it will use the exported app
+module.exports = app;
 
