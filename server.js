@@ -28,6 +28,7 @@ const connectDB = require('./config/database');
 const errorHandler = require('./middleware/errorHandler');
 const { sanitizeInput } = require('./middleware/sanitize');
 const { apiLimiter } = require('./middleware/rateLimiter');
+const { ensureDBConnection } = require('./middleware/dbConnection');
 
 // Import routes
 const testRoutes = require('./routes/test');
@@ -136,6 +137,16 @@ app.post('/api/admin/reconnect-db', async (req, res) => {
 });
 
 // ==================== API Routes ====================
+// Ensure database connection for all API routes (except health check and admin reconnect)
+// Health check and reconnect routes are excluded to allow checking DB status
+app.use('/api', (req, res, next) => {
+    // Skip DB connection check for health and reconnect endpoints
+    if (req.path === '/health' || req.path === '/admin/reconnect-db') {
+        return next();
+    }
+    return ensureDBConnection(req, res, next);
+});
+
 // Authentication routes (Part 6)
 app.use('/api/auth', authRoutes);
 // Test routes (for database testing - Part 2)
@@ -204,13 +215,17 @@ if (require.main === module) {
         });
 } else {
     // Being imported (Vercel serverless)
-    // Connect to database but don't start server
+    // For serverless, we'll connect on first request if not already connected
+    // This prevents connection issues on cold starts
+    console.log('📦 Serverless mode detected - Database will connect on first request');
+
+    // Try to connect in background (non-blocking)
     connectDB()
         .then(() => {
-            console.log('✅ Database connected (Serverless)');
+            console.log('✅ Database connected (Serverless - background)');
         })
         .catch((error) => {
-            console.error('❌ Database connection failed (Serverless):', error.message);
+            console.warn('⚠️  Database connection failed (Serverless - will retry on request):', error.message);
         });
 }
 

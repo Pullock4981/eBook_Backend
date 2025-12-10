@@ -21,11 +21,35 @@ const generateAccessToken = () => {
 
 /**
  * Calculate token expiry date
- * @param {Number} days - Number of days (default: 365)
+ * Supports both days (number) and hours format (string like "24h", "7d")
+ * @param {Number|String} value - Number of days or string format (e.g., "24h", "7d", "365")
  * @returns {Date} - Expiry date
  */
-const getTokenExpiry = (days = 365) => {
+const getTokenExpiry = (value = 365) => {
     const expiry = new Date();
+
+    // If string format (e.g., "24h", "7d")
+    if (typeof value === 'string') {
+        const match = value.match(/^(\d+)([hd])$/i);
+        if (match) {
+            const num = parseInt(match[1]);
+            const unit = match[2].toLowerCase();
+            if (unit === 'h') {
+                expiry.setHours(expiry.getHours() + num);
+                return expiry;
+            } else if (unit === 'd') {
+                expiry.setDate(expiry.getDate() + num);
+                return expiry;
+            }
+        }
+        // If just a number string, parse as days
+        const days = parseInt(value) || 365;
+        expiry.setDate(expiry.getDate() + days);
+        return expiry;
+    }
+
+    // Default: treat as days (number)
+    const days = typeof value === 'number' ? value : parseInt(value) || 365;
     expiry.setDate(expiry.getDate() + days);
     return expiry;
 };
@@ -86,7 +110,9 @@ const createeBookAccess = async (userId, orderId, productId, req = null) => {
 
         // Generate access token
         const accessToken = generateAccessToken();
-        const tokenExpiry = getTokenExpiry(parseInt(process.env.EBOOK_TOKEN_EXPIRY_DAYS || '365'));
+        // Support both EBOOK_TOKEN_EXPIRY_DAYS and EBOOK_ACCESS_TOKEN_EXPIRY
+        const expiryValue = process.env.EBOOK_ACCESS_TOKEN_EXPIRY || process.env.EBOOK_TOKEN_EXPIRY_DAYS || '365';
+        const tokenExpiry = getTokenExpiry(expiryValue);
 
         // Create access record
         const accessData = {

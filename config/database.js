@@ -34,9 +34,21 @@ const connectDB = async () => {
             }
         }
 
+        // Check if already connected (for serverless function reuse)
+        if (mongoose.connection.readyState === 1) {
+            console.log('✅ MongoDB already connected (reusing connection)');
+            return mongoose.connection;
+        }
+
         const conn = await mongoose.connect(mongoUri, {
-            serverSelectionTimeoutMS: 10000, // Timeout after 10s
+            serverSelectionTimeoutMS: 30000, // Increased timeout for serverless (30s)
             socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
+            maxPoolSize: 10, // Maintain up to 10 socket connections
+            minPoolSize: 1, // Maintain at least 1 socket connection
+            maxIdleTimeMS: 30000, // Close connections after 30s of inactivity
+            // Serverless-friendly options
+            bufferCommands: false, // Disable mongoose buffering
+            bufferMaxEntries: 0, // Disable mongoose buffering
         });
 
         console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
