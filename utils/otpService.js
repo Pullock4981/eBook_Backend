@@ -106,6 +106,7 @@ const generateAndSendOTP = async (mobile) => {
 
     return {
         success: true,
+        otp: otp, // Return OTP for development/testing
         otpExpiry: getOTPExpiry(),
         message: 'OTP sent successfully'
     };

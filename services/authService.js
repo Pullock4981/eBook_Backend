@@ -45,6 +45,7 @@ const register = async (mobile, name, password) => {
     // If user exists but not verified, update user data and resend OTP
     // Otherwise create new user
     let user;
+    let otpResult;
     if (existingUser) {
         // Update existing user with name and password if provided
         if (name || password) {
@@ -61,21 +62,25 @@ const register = async (mobile, name, password) => {
             await userRepository.updateById(existingUser._id, updateData);
         }
         // Resend OTP for unverified user
-        await otpService.generateAndSendOTP(mobile);
+        otpResult = await otpService.generateAndSendOTP(mobile);
         user = await userRepository.findByMobile(mobile);
     } else {
         // Create new user
         user = await userRepository.create(userData);
 
         // Generate and send OTP
-        await otpService.generateAndSendOTP(mobile);
+        otpResult = await otpService.generateAndSendOTP(mobile);
     }
 
     return {
         success: true,
         message: 'OTP sent to your mobile number',
         mobile: user.mobile,
-        otpExpiry: otpService.getOTPExpiry()
+        otpExpiry: otpService.getOTPExpiry(),
+        // Return OTP in development mode only
+        ...(process.env.NODE_ENV === 'development' && otpResult?.otp && {
+            otp: otpResult.otp
+        })
     };
 };
 
@@ -93,13 +98,17 @@ const requestOTP = async (mobile) => {
     }
 
     // Generate and send OTP
-    await otpService.generateAndSendOTP(mobile);
+    const otpResult = await otpService.generateAndSendOTP(mobile);
 
     return {
         success: true,
         message: 'OTP sent to your mobile number',
         mobile: user.mobile,
-        otpExpiry: otpService.getOTPExpiry()
+        otpExpiry: otpService.getOTPExpiry(),
+        // Return OTP in development mode only
+        ...(process.env.NODE_ENV === 'development' && otpResult?.otp && {
+            otp: otpResult.otp
+        })
     };
 };
 
@@ -216,13 +225,17 @@ const resendOTP = async (mobile) => {
     }
 
     // Generate and send new OTP
-    await otpService.generateAndSendOTP(mobile);
+    const otpResult = await otpService.generateAndSendOTP(mobile);
 
     return {
         success: true,
         message: 'OTP resent to your mobile number',
         mobile: user.mobile,
-        otpExpiry: otpService.getOTPExpiry()
+        otpExpiry: otpService.getOTPExpiry(),
+        // Return OTP in development mode only
+        ...(process.env.NODE_ENV === 'development' && otpResult?.otp && {
+            otp: otpResult.otp
+        })
     };
 };
 

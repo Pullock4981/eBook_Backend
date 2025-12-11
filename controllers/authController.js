@@ -18,7 +18,11 @@ exports.register = async (req, res, next) => {
             message: result.message,
             data: {
                 mobile: result.mobile,
-                otpExpiry: result.otpExpiry
+                otpExpiry: result.otpExpiry,
+                // Include OTP in development mode
+                ...(process.env.NODE_ENV === 'development' && result.otp && {
+                    otp: result.otp
+                })
             }
         });
     } catch (error) {
@@ -39,7 +43,11 @@ exports.requestOTP = async (req, res, next) => {
             message: result.message,
             data: {
                 mobile: result.mobile,
-                otpExpiry: result.otpExpiry
+                otpExpiry: result.otpExpiry,
+                // Include OTP in development mode
+                ...(process.env.NODE_ENV === 'development' && result.otp && {
+                    otp: result.otp
+                })
             }
         });
     } catch (error) {
@@ -102,7 +110,11 @@ exports.resendOTP = async (req, res, next) => {
             message: result.message,
             data: {
                 mobile: result.mobile,
-                otpExpiry: result.otpExpiry
+                otpExpiry: result.otpExpiry,
+                // Include OTP in development mode
+                ...(process.env.NODE_ENV === 'development' && result.otp && {
+                    otp: result.otp
+                })
             }
         });
     } catch (error) {
