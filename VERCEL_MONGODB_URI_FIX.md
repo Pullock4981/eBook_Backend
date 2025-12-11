@@ -2,10 +2,11 @@
 
 ## 🔴 **Problem:**
 
-Your current `MONGODB_URI` in Vercel:
+Your current `MONGODB_URI` format (example):
 ```
-mongodb+srv://ashikpullock99_db_user:AC7Kgufr3ISkl6Nm@cluster0.0bf9be8.mongodb.net/?appName=Cluster0
+mongodb+srv://username:password@cluster.mongodb.net/?appName=Cluster0
 ```
+**⚠️ Note: This is an example. Never commit real credentials.**
 
 **Issue:** Database name (`/ebook_db`) is missing before the `?`
 
@@ -19,10 +20,11 @@ Vercel Dashboard → Settings → Environment Variables:
 
 1. Find `MONGODB_URI`
 2. Click to edit
-3. **Update the Value to:**
+3. **Update the Value to (replace with your actual credentials):**
    ```
-   mongodb+srv://ashikpullock99_db_user:AC7Kgufr3ISkl6Nm@cluster0.0bf9be8.mongodb.net/ebook_db?retryWrites=true&w=majority&appName=Cluster0
+   mongodb+srv://username:password@cluster.mongodb.net/ebook_db?retryWrites=true&w=majority&appName=Cluster0
    ```
+   **⚠️ Replace `username`, `password`, and `cluster` with your actual MongoDB Atlas credentials.**
 
 **Changes:**
 - ✅ Added `/ebook_db` before the `?`

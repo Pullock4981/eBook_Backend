@@ -48,10 +48,14 @@ Vercel Dashboard → Settings → Environment Variables:
 
 ```env
 # Database
-MONGODB_URI=mongodb+srv://ashikpullock99_db_user:AC7Kgufr3ISkl6Nm@cluster0.0bf9be8.mongodb.net/ebook_db?retryWrites=true&w=majority&appName=Cluster0
+# ⚠️ NEVER commit real credentials to Git!
+# Get your MongoDB URI from: MongoDB Atlas → Connect → Connect your application
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/ebook_db?retryWrites=true&w=majority&appName=Cluster0
 
 # JWT Security
-JWT_SECRET=a7f3b9c2d8e1f4a6b9c2d5e8f1a4b7c0d3e6f9a2b5c8d1e4f7a0b3c6d9e2f5a8b1c4d7e0f3a6b9c2d5e8f1a4b7c0d3e6f9a2b5c8d1e4f7a0b3c6d9e2f5a8b1c4d7e0f3
+# ⚠️ Generate a strong random secret (at least 64 characters)
+# Use: openssl rand -base64 64
+JWT_SECRET=your-super-secret-jwt-key-minimum-64-characters-long-use-openssl-rand-base64-64-to-generate
 JWT_EXPIRES_IN=7d
 JWT_REFRESH_EXPIRES_IN=30d
 

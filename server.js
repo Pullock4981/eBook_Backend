@@ -64,10 +64,8 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Input sanitization middleware (protect against XSS)
 app.use(sanitizeInput);
 
-// Rate limiting middleware (apply to all routes)
-app.use('/api/', apiLimiter);
-
-// ==================== Basic Routes ====================
+// ==================== Basic Routes (Before Rate Limiting) ====================
+// These routes are defined before rate limiting to ensure they're always accessible
 
 // Health check route
 app.get('/', (req, res) => {
@@ -127,7 +125,7 @@ app.get('/api/test', (req, res) => {
 });
 
 // Database connection test endpoint (direct route for Vercel compatibility)
-// Defined directly in server.js BEFORE middleware to ensure accessibility
+// Defined BEFORE rate limiting middleware to ensure accessibility
 app.get('/api/test/db-connection', async (req, res) => {
     const mongoose = require('mongoose');
     const connectDB = require('./config/database');
@@ -212,6 +210,10 @@ app.get('/api/test/db-connection', async (req, res) => {
         res.status(500).json(result);
     }
 });
+
+// Rate limiting middleware (apply to all API routes EXCEPT those defined above)
+// Routes defined above (/, /api/health, /api/test, /api/test/db-connection) are not rate limited
+app.use('/api/', apiLimiter);
 
 // Manual database reconnection endpoint (for admin/testing)
 app.post('/api/admin/reconnect-db', async (req, res) => {

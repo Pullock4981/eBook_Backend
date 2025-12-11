@@ -23,10 +23,11 @@
 
 ## 🔍 **Current Status:**
 
-**Your MongoDB URI (from Vercel):**
+**Your MongoDB URI Format:**
 ```
-mongodb+srv://ashikpullock99_db_user:AC7Kgufr3ISkl6Nm@cluster0.0bf9be8.mongodb.net/ebook_db?appName=Cluster0
+mongodb+srv://username:password@cluster.mongodb.net/ebook_db?appName=Cluster0
 ```
+**⚠️ Note: Never commit real credentials to Git. Use environment variables only.**
 
 **Status:**
 - ✅ IP Whitelist: `0.0.0.0/0` Active
@@ -41,15 +42,16 @@ mongodb+srv://ashikpullock99_db_user:AC7Kgufr3ISkl6Nm@cluster0.0bf9be8.mongodb.n
 
 Add retry options for better reliability:
 
-**Current:**
+**Current Format:**
 ```
-mongodb+srv://ashikpullock99_db_user:AC7Kgufr3ISkl6Nm@cluster0.0bf9be8.mongodb.net/ebook_db?appName=Cluster0
+mongodb+srv://username:password@cluster.mongodb.net/ebook_db?appName=Cluster0
 ```
 
 **Update to:**
 ```
-mongodb+srv://ashikpullock99_db_user:AC7Kgufr3ISkl6Nm@cluster0.0bf9be8.mongodb.net/ebook_db?retryWrites=true&w=majority&appName=Cluster0
+mongodb+srv://username:password@cluster.mongodb.net/ebook_db?retryWrites=true&w=majority&appName=Cluster0
 ```
+**⚠️ Replace `username`, `password`, and `cluster` with your actual MongoDB Atlas credentials.**
 
 **Steps:**
 1. Vercel Dashboard → Settings → Environment Variables
