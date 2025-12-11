@@ -19,18 +19,31 @@ const connectDB = async () => {
         // Fix MONGODB_URI if database name is missing
         let mongoUri = process.env.MONGODB_URI.trim();
 
-        // Check if database name is missing (URI ends with /? or just ?)
+        // Fix MONGODB_URI if database name is missing
         if (mongoUri.includes('mongodb+srv://')) {
             // Extract the base part before query parameters
             const uriParts = mongoUri.split('?');
             const baseUri = uriParts[0];
             const queryParams = uriParts.length > 1 ? '?' + uriParts.slice(1).join('?') : '';
 
-            // Check if database name is missing (URI ends with .mongodb.net/ or .mongodb.net)
-            if (baseUri.endsWith('.mongodb.net/') || baseUri.endsWith('.mongodb.net')) {
-                // Add database name
-                mongoUri = baseUri.replace(/\.mongodb\.net\/?$/, '.mongodb.net/ebook_db') + queryParams;
+            // Check if database name is missing
+            // Cases: ...mongodb.net/ or ...mongodb.net (with or without trailing slash, but no database name)
+            const hasDatabaseName = /\.mongodb\.net\/[^?\/]+/.test(mongoUri);
+
+            if (!hasDatabaseName) {
+                // Add database name before query params
+                if (baseUri.endsWith('/')) {
+                    // Case: ...mongodb.net/?
+                    mongoUri = baseUri + 'ebook_db' + queryParams;
+                } else if (baseUri.endsWith('.mongodb.net')) {
+                    // Case: ...mongodb.net?
+                    mongoUri = baseUri + '/ebook_db' + queryParams;
+                } else {
+                    // Fallback: try to add after .net
+                    mongoUri = baseUri.replace(/\.mongodb\.net\/?$/, '.mongodb.net/ebook_db') + queryParams;
+                }
                 console.log('⚠️  Database name was missing in MONGODB_URI. Added: /ebook_db');
+                console.log('📝 Updated URI:', mongoUri.replace(/:[^:@]+@/, ':****@')); // Hide password in logs
             }
         }
 
