@@ -19,8 +19,8 @@ exports.register = async (req, res, next) => {
             data: {
                 mobile: result.mobile,
                 otpExpiry: result.otpExpiry,
-                // Include OTP in development mode
-                ...(process.env.NODE_ENV === 'development' && result.otp && {
+                // Include OTP for frontend display (SMS will be implemented later)
+                ...(result.otp && {
                     otp: result.otp
                 })
             }
@@ -44,8 +44,8 @@ exports.requestOTP = async (req, res, next) => {
             data: {
                 mobile: result.mobile,
                 otpExpiry: result.otpExpiry,
-                // Include OTP in development mode
-                ...(process.env.NODE_ENV === 'development' && result.otp && {
+                // Include OTP for frontend display (SMS will be implemented later)
+                ...(result.otp && {
                     otp: result.otp
                 })
             }
@@ -111,8 +111,8 @@ exports.resendOTP = async (req, res, next) => {
             data: {
                 mobile: result.mobile,
                 otpExpiry: result.otpExpiry,
-                // Include OTP in development mode
-                ...(process.env.NODE_ENV === 'development' && result.otp && {
+                // Include OTP for frontend display (SMS will be implemented later)
+                ...(result.otp && {
                     otp: result.otp
                 })
             }

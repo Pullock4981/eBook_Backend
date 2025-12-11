@@ -77,8 +77,8 @@ const register = async (mobile, name, password) => {
         message: 'OTP sent to your mobile number',
         mobile: user.mobile,
         otpExpiry: otpService.getOTPExpiry(),
-        // Return OTP in development mode only
-        ...(process.env.NODE_ENV === 'development' && otpResult?.otp && {
+        // Return OTP for frontend display (SMS will be implemented later)
+        ...(otpResult?.otp && {
             otp: otpResult.otp
         })
     };
@@ -105,8 +105,8 @@ const requestOTP = async (mobile) => {
         message: 'OTP sent to your mobile number',
         mobile: user.mobile,
         otpExpiry: otpService.getOTPExpiry(),
-        // Return OTP in development mode only
-        ...(process.env.NODE_ENV === 'development' && otpResult?.otp && {
+        // Return OTP for frontend display (SMS will be implemented later)
+        ...(otpResult?.otp && {
             otp: otpResult.otp
         })
     };
@@ -232,8 +232,8 @@ const resendOTP = async (mobile) => {
         message: 'OTP resent to your mobile number',
         mobile: user.mobile,
         otpExpiry: otpService.getOTPExpiry(),
-        // Return OTP in development mode only
-        ...(process.env.NODE_ENV === 'development' && otpResult?.otp && {
+        // Return OTP for frontend display (SMS will be implemented later)
+        ...(otpResult?.otp && {
             otp: otpResult.otp
         })
     };
