@@ -117,6 +117,15 @@ app.get('/api/health', async (req, res) => {
     });
 });
 
+// Simple test route to verify routing works
+app.get('/api/test', (req, res) => {
+    res.json({
+        success: true,
+        message: 'Test route is working!',
+        timestamp: new Date().toISOString()
+    });
+});
+
 // Database connection test endpoint (direct route for Vercel compatibility)
 // Defined directly in server.js BEFORE middleware to ensure accessibility
 app.get('/api/test/db-connection', async (req, res) => {
