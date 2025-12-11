@@ -70,13 +70,27 @@ const ensureDBConnection = async (req, res, next) => {
         console.error('❌ Database connection error in middleware:', error.message);
         console.error('Connection state:', mongoose.connection.readyState);
 
-        // Return error response
-        return res.status(503).json({
+        // Return error response with helpful details
+        const errorResponse = {
             success: false,
             message: 'Database connection unavailable. Please try again in a moment.',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-            connectionState: mongoose.connection.readyState
-        });
+            connectionState: mongoose.connection.readyState,
+            // Always show error in response for debugging (Vercel logs might not show it)
+            error: error.message,
+            hint: !process.env.MONGODB_URI
+                ? 'MONGODB_URI is not set in Vercel environment variables'
+                : error.message.includes('authentication failed')
+                    ? 'Check MongoDB username and password in MONGODB_URI'
+                    : error.message.includes('ENOTFOUND')
+                        ? 'Check MongoDB connection string format'
+                        : error.message.includes('IP') || error.message.includes('whitelist')
+                            ? 'Add 0.0.0.0/0 to MongoDB Atlas Network Access'
+                            : error.message.includes('timeout')
+                                ? 'Connection timeout - Check MongoDB Atlas settings and network'
+                                : 'Check Vercel logs for detailed error'
+        };
+
+        return res.status(503).json(errorResponse);
     }
 };
 
