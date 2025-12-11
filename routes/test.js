@@ -7,6 +7,9 @@ const express = require('express');
 const router = express.Router();
 const testController = require('../controllers/testController');
 
+// IMPORTANT: Specific routes must be defined BEFORE parameterized routes (/:id)
+// Otherwise, /:id will match /db-connection and /db-status
+
 // Database connection test endpoint (public for debugging)
 // This endpoint tests MongoDB connection and provides detailed status
 router.get('/db-connection', async (req, res) => {
@@ -98,8 +101,10 @@ router.get('/db-connection', async (req, res) => {
 router.get('/db-status', testController.getDatabaseStatus);
 
 // CRUD operations
+// Note: These routes are defined AFTER specific routes to avoid route conflicts
 router.post('/', testController.createTest);
 router.get('/', testController.getAllTests);
+// Parameterized routes must be LAST
 router.get('/:id', testController.getTestById);
 router.put('/:id', testController.updateTest);
 router.delete('/:id', testController.deleteTest);
