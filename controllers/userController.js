@@ -158,3 +158,25 @@ exports.setDefaultAddress = async (req, res, next) => {
     }
 };
 
+/**
+ * Get all users
+ * GET /api/users/all
+ */
+exports.getAllUsers = async (req, res, next) => {
+    try {
+        const { page = 1, limit = 50 } = req.query;
+        const result = await userService.getAllUsers(parseInt(page), parseInt(limit));
+
+        res.status(200).json({
+            success: true,
+            message: 'Users retrieved successfully',
+            data: {
+                users: result.users,
+                pagination: result.pagination
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+

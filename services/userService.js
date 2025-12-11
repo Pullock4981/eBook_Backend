@@ -341,6 +341,20 @@ const setDefaultAddress = async (userId, addressId) => {
     return updatedAddress;
 };
 
+/**
+ * Get all users (simple list)
+ * @param {Number} page - Page number
+ * @param {Number} limit - Items per page
+ * @returns {Promise<Object>} - Users with pagination
+ */
+const getAllUsers = async (page = 1, limit = 50) => {
+    try {
+        return await userRepository.getAll({}, page, limit);
+    } catch (error) {
+        throw new Error(`Failed to get users: ${error.message}`);
+    }
+};
+
 module.exports = {
     registerUser,
     getUserByMobile,
@@ -352,6 +366,7 @@ module.exports = {
     createAddress,
     updateAddress,
     deleteAddress,
-    setDefaultAddress
+    setDefaultAddress,
+    getAllUsers
 };
 

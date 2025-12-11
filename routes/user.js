@@ -45,5 +45,8 @@ router.put('/me/addresses/:id', userController.updateAddress);
 router.delete('/me/addresses/:id', userController.deleteAddress);
 router.put('/me/addresses/:id/default', userController.setDefaultAddress);
 
+// Get all users (requires authentication)
+router.get('/all', userController.getAllUsers);
+
 module.exports = router;
 

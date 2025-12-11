@@ -59,9 +59,8 @@ const connectDB = async () => {
             maxPoolSize: 10, // Maintain up to 10 socket connections
             minPoolSize: 1, // Maintain at least 1 socket connection
             maxIdleTimeMS: 30000, // Close connections after 30s of inactivity
-            // Serverless-friendly options
-            bufferCommands: false, // Disable mongoose buffering
-            bufferMaxEntries: 0, // Disable mongoose buffering
+            // Note: bufferCommands and bufferMaxEntries are not supported in Mongoose 7.x
+            // These options have been removed as they're not compatible with current version
         });
 
         console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
