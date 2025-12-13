@@ -17,6 +17,15 @@ const eBookController = require('../controllers/eBookController');
 router.get('/', authenticate, eBookController.getUserEBooks);
 
 /**
+ * @route   GET /api/ebooks/view
+ * @desc    Serve watermarked PDF (protected by IP/device)
+ * @access  Private (via token)
+ * @note    This endpoint must come BEFORE parameterized routes
+ *          to avoid route conflicts
+ */
+router.get('/view', checkeBookAccess, eBookController.servePDF);
+
+/**
  * @route   GET /api/ebooks/:productId/access
  * @desc    Get eBook access token
  * @access  Private
@@ -29,15 +38,6 @@ router.get('/:productId/access', authenticate, eBookController.geteBookAccess);
  * @access  Private
  */
 router.get('/:productId/viewer', authenticate, eBookController.getViewerURL);
-
-/**
- * @route   GET /api/ebooks/view
- * @desc    Serve watermarked PDF (protected by IP/device)
- * @access  Private (via token)
- * @note    This endpoint is protected by checkeBookAccess middleware
- *          which validates IP, device, and token
- */
-router.get('/view', checkeBookAccess, eBookController.servePDF);
 
 /**
  * @route   DELETE /api/ebooks/:accessId
