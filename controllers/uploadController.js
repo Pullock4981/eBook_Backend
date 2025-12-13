@@ -220,28 +220,59 @@ exports.uploadPDF = async (req, res, next) => {
             });
         }
 
-        // File is already uploaded by multer middleware
-        // Cloudinary returns the result in req.file
-        // For raw files (PDFs), multer-storage-cloudinary might return different structure
         console.log('PDF Upload - req.file structure:', JSON.stringify(req.file, null, 2));
+        console.log('PDF Upload - req.file has buffer?', !!req.file.buffer);
+        console.log('PDF Upload - req.file buffer size:', req.file.buffer ? req.file.buffer.length : 0);
+
+        // With memory storage, we always upload manually to Cloudinary
+        const cloudinary = require('../utils/cloudinary').cloudinary;
         
-        const result = {
-            public_id: req.file.public_id,
-            secure_url: req.file.secure_url || req.file.path || req.file.url,
-            url: req.file.url || req.file.path || req.file.secure_url,
-            format: req.file.format,
-            bytes: req.file.bytes || req.file.size,
-            resource_type: req.file.resource_type || 'raw',
-        };
+        let result;
         
-        // If secure_url and url are both missing, try to construct from public_id
-        if (!result.secure_url && !result.url && req.file.public_id) {
-            const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-            result.secure_url = `https://res.cloudinary.com/${cloudName}/raw/upload/${req.file.public_id}`;
-            result.url = result.secure_url;
+        try {
+            // Upload to Cloudinary using the buffer
+            if (!req.file.buffer) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'File buffer not available',
+                });
+            }
+
+            console.log('PDF Upload - Uploading to Cloudinary...');
+            const uploadResult = await new Promise((resolve, reject) => {
+                cloudinary.uploader.upload_stream(
+                    {
+                        folder: 'ebook/digital-files',
+                        resource_type: 'raw', // PDFs are raw files
+                    },
+                    (error, result) => {
+                        if (error) {
+                            console.error('PDF Upload - Cloudinary upload error:', error);
+                            reject(error);
+                        } else {
+                            resolve(result);
+                        }
+                    }
+                ).end(req.file.buffer);
+            });
+
+            result = {
+                public_id: uploadResult.public_id,
+                secure_url: uploadResult.secure_url,
+                url: uploadResult.url,
+                format: uploadResult.format || 'pdf',
+                bytes: uploadResult.bytes,
+                resource_type: uploadResult.resource_type || 'raw',
+            };
+
+            console.log('PDF Upload - Upload successful:', result.secure_url);
+        } catch (uploadError) {
+            console.error('PDF Upload - Upload failed:', uploadError);
+            return res.status(500).json({
+                success: false,
+                message: `Failed to upload PDF to Cloudinary: ${uploadError.message}. Please check Cloudinary configuration.`,
+            });
         }
-        
-        console.log('PDF Upload - Final result:', JSON.stringify(result, null, 2));
 
         res.status(200).json({
             success: true,
@@ -249,13 +280,7 @@ exports.uploadPDF = async (req, res, next) => {
             data: result,
         });
     } catch (error) {
-        // Provide more specific error messages
-        if (error.message && error.message.includes('Cloudinary')) {
-            return res.status(500).json({
-                success: false,
-                message: `Cloudinary upload failed: ${error.message}. Please check your Cloudinary configuration.`,
-            });
-        }
+        console.error('PDF Upload - Unexpected error:', error);
         next(error);
     }
 };

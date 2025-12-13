@@ -58,8 +58,9 @@ const imageUpload = multer({
 });
 
 // Configure multer for PDFs
+// Use memory storage like images to ensure we have buffer access for manual Cloudinary upload
 const pdfUpload = multer({
-    storage: pdfStorage,
+    storage: memoryStorage, // Use memory storage instead of CloudinaryStorage
     limits: {
         fileSize: 50 * 1024 * 1024, // 50MB max file size for PDFs
     },
