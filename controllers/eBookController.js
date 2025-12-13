@@ -53,12 +53,45 @@ exports.geteBookAccess = async (req, res, next) => {
     try {
         const userId = req.userId;
         const { productId } = req.params;
+        const user = req.user; // User object from auth middleware
 
         // Find access for this user and product
         const eBookAccessRepository = require('../repositories/eBookAccessRepository');
         const access = await eBookAccessRepository.findByUserAndProduct(userId, productId);
 
+        // TESTING MODE: Allow admin users to access any PDF without purchase
+        // Remove this in production or add environment variable check
+        const isAdmin = user && user.role === 'admin';
+        const isTestingMode = process.env.NODE_ENV !== 'production' || process.env.ALLOW_TESTING_ACCESS === 'true';
+
         if (!access || !access.isActive) {
+            // If admin or testing mode, allow direct PDF access
+            if (isAdmin || isTestingMode) {
+                const productRepository = require('../repositories/productRepository');
+                const product = await productRepository.findById(productId);
+                
+                if (product && product.digitalFile) {
+                    // Return direct PDF URL for testing (no access token needed)
+                    return res.status(200).json({
+                        success: true,
+                        message: 'eBook access granted (testing mode)',
+                        data: {
+                            accessToken: 'TESTING_TOKEN', // Dummy token
+                            product: {
+                                id: product._id,
+                                name: product.name,
+                                slug: product.slug,
+                                digitalFile: product.digitalFile
+                            },
+                            tokenExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
+                            lastAccess: new Date(),
+                            isTesting: true,
+                            directPDFUrl: product.digitalFile // Direct URL for testing
+                        }
+                    });
+                }
+            }
+
             return res.status(404).json({
                 success: false,
                 message: 'eBook access not found. Please ensure you have purchased this eBook.'
