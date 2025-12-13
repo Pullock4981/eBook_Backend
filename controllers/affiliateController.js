@@ -45,14 +45,16 @@ exports.registerAsAffiliate = async (req, res, next) => {
 exports.getAffiliateProfile = async (req, res, next) => {
     try {
         const userId = req.userId;
-        console.log('getAffiliateProfile - userId:', userId);
 
         const affiliate = await affiliateService.getAffiliateByUser(userId);
 
-        console.log('getAffiliateProfile - affiliate found:', affiliate ? 'Yes' : 'No');
-        if (affiliate) {
-            console.log('getAffiliateProfile - affiliate status:', affiliate.status);
-            console.log('getAffiliateProfile - affiliate referralCode:', affiliate.referralCode);
+        if (!affiliate) {
+            // User is not affiliate - return 404 silently (this is normal, not an error)
+            return res.status(404).json({
+                success: false,
+                message: 'Affiliate profile not found',
+                data: null
+            });
         }
 
         res.status(200).json({
@@ -77,14 +79,18 @@ exports.getAffiliateProfile = async (req, res, next) => {
             }
         });
     } catch (error) {
-        console.log('getAffiliateProfile - error:', error.message);
-        // If affiliate not found, return 404 but don't throw error (user is not affiliate)
-        if (error.message && error.message.includes('not found')) {
+        // If affiliate not found, return 404 silently (this is normal, not an error)
+        // Most users are not affiliates, so this is expected behavior
+        if (error.message && (error.message.includes('not found') || error.message.includes('Affiliate not found'))) {
             return res.status(404).json({
                 success: false,
                 message: 'Affiliate profile not found',
                 data: null
             });
+        }
+        // Only log and forward actual errors (not "not found" cases)
+        if (process.env.NODE_ENV !== 'production') {
+            console.error('getAffiliateProfile - unexpected error:', error.message);
         }
         next(error);
     }

@@ -39,6 +39,16 @@ const createProduct = async (productData) => {
         throw new Error('Stock is required for physical products');
     }
 
+    // Validate discount price - must be less than regular price
+    if (productData.discountPrice !== undefined && productData.discountPrice !== null) {
+        if (productData.discountPrice >= productData.price) {
+            throw new Error('Discount price must be less than regular price');
+        }
+        if (productData.discountPrice < 0) {
+            throw new Error('Discount price cannot be negative');
+        }
+    }
+
     // Log PDF information for digital products
     if (productData.type === 'digital' && productData.digitalFile) {
         console.log('📄 Creating digital product with PDF:');
@@ -167,8 +177,14 @@ const getProductById = async (id, incrementViews = false) => {
 
     // Increment views if requested
     if (incrementViews) {
+        // Only increment in database - don't manually increment the product object
+        // The incrementViews function already increments in the database
         await productRepository.incrementViews(id);
-        product.views += 1;
+        // Fetch the updated product to get the correct view count
+        const updatedProduct = await productRepository.findById(productId);
+        if (updatedProduct) {
+            product.views = updatedProduct.views;
+        }
     }
 
     return product;
@@ -197,8 +213,14 @@ const getProductBySlug = async (slug, incrementViews = false) => {
 
     // Increment views if requested
     if (incrementViews) {
+        // Only increment in database - don't manually increment the product object
+        // The incrementViews function already increments in the database
         await productRepository.incrementViews(product._id);
-        product.views += 1;
+        // Fetch the updated product to get the correct view count
+        const updatedProduct = await productRepository.findById(product._id);
+        if (updatedProduct) {
+            product.views = updatedProduct.views;
+        }
     }
 
     return product;
@@ -234,6 +256,75 @@ const updateProduct = async (id, productData) => {
         const subcategory = await categoryRepository.findById(productData.subcategory);
         if (!subcategory) {
             throw new Error('Subcategory not found');
+        }
+    }
+
+    // Validate discount price - must be less than regular price
+    // IMPORTANT: Always use the price from update data if provided, otherwise use existing price
+    // Convert to numbers to ensure proper comparison
+    
+    // Get the price to compare against (new price takes priority)
+    let priceToCompare;
+    
+    if (productData.price !== undefined && productData.price !== null) {
+        // New price is being sent in update
+        priceToCompare = typeof productData.price === 'number' 
+            ? productData.price 
+            : parseFloat(String(productData.price));
+    } else {
+        // Use existing price from database
+        priceToCompare = typeof existingProduct.price === 'number' 
+            ? existingProduct.price 
+            : parseFloat(String(existingProduct.price));
+    }
+    
+    // Validate discount price only if both discountPrice and priceToCompare are valid
+    if (productData.discountPrice !== undefined && productData.discountPrice !== null) {
+        // Convert discount price to number
+        const discountPriceNum = typeof productData.discountPrice === 'number' 
+            ? productData.discountPrice 
+            : parseFloat(String(productData.discountPrice));
+        
+        // Check for invalid numbers
+        if (isNaN(discountPriceNum)) {
+            throw new Error('Invalid discount price value');
+        }
+        
+        if (isNaN(priceToCompare) || priceToCompare === undefined || priceToCompare === null) {
+            throw new Error('Invalid regular price value');
+        }
+        
+        console.log('Product Update - Price Validation:', {
+            productId: id,
+            priceFromUpdate: productData.price,
+            existingPrice: existingProduct.price,
+            priceToCompare: priceToCompare,
+            discountPrice: discountPriceNum,
+            comparison: `${discountPriceNum} < ${priceToCompare} = ${discountPriceNum < priceToCompare}`,
+            isValid: discountPriceNum < priceToCompare,
+            rawProductData: {
+                price: productData.price,
+                discountPrice: productData.discountPrice
+            }
+        });
+        
+        // Validate: discount price must be less than regular price
+        if (discountPriceNum >= priceToCompare) {
+            console.error('Product Update - Discount Price Validation Failed:', {
+                discountPrice: discountPriceNum,
+                priceToCompare: priceToCompare,
+                comparison: `${discountPriceNum} >= ${priceToCompare}`,
+                rawData: {
+                    discountPrice: productData.discountPrice,
+                    price: productData.price,
+                    existingPrice: existingProduct.price
+                }
+            });
+            throw new Error(`Discount price (${discountPriceNum}) must be less than regular price (${priceToCompare})`);
+        }
+        
+        if (discountPriceNum < 0) {
+            throw new Error('Discount price cannot be negative');
         }
     }
 

@@ -51,11 +51,16 @@ const registerAsAffiliate = async (userId, affiliateData = {}) => {
 const getAffiliateByUser = async (userId) => {
     try {
         const affiliate = await affiliateRepository.findByUser(userId);
+        // Return null if not found (most users are not affiliates - this is normal)
         if (!affiliate) {
-            throw new Error('Affiliate not found');
+            return null; // Return null instead of throwing error
         }
         return affiliate;
     } catch (error) {
+        // Only throw error for actual failures, not "not found" cases
+        if (error.message && error.message.includes('not found')) {
+            return null; // Return null for "not found" cases
+        }
         throw new Error(`Failed to get affiliate: ${error.message}`);
     }
 };

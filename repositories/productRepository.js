@@ -100,10 +100,18 @@ const findBySlug = async (slug) => {
  * @returns {Promise<Object>} - Updated product document
  */
 const updateById = async (id, data) => {
+    // For updates, we need to handle discountPrice validation carefully
+    // The model validator uses this.price which might be the old price
+    // So we validate in service layer first, then update
+    // We'll run validators but the service layer validation should catch issues first
     return await Product.findByIdAndUpdate(
         id,
         data,
-        { new: true, runValidators: true }
+        { 
+            new: true, 
+            runValidators: true,
+            setDefaultsOnInsert: true
+        }
     ).populate('category', 'name slug')
         .populate('subcategory', 'name slug');
 };

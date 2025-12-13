@@ -34,15 +34,13 @@ const findByUser = async (userId) => {
             })
             .populate('approvedBy', 'profile.name');
 
-        console.log('findByUser - userId:', userId);
-        console.log('findByUser - affiliate found:', affiliate ? 'Yes' : 'No');
-        if (affiliate) {
-            console.log('findByUser - affiliate user:', affiliate.user);
-        }
-
+        // Silently return null if not found (most users are not affiliates)
         return affiliate;
     } catch (error) {
-        console.error('findByUser error:', error);
+        // Only log actual errors, not "not found" cases
+        if (process.env.NODE_ENV !== 'production') {
+            console.error('findByUser error:', error);
+        }
         throw new Error(`Failed to find affiliate: ${error.message}`);
     }
 };

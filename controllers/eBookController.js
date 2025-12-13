@@ -66,7 +66,50 @@ exports.geteBookAccess = async (req, res, next) => {
         const isAdmin = req.user && req.user.role === 'admin';
         const isTestingMode = isDevelopment || allowTestingAccess || isAdmin;
 
+        // Check if product is in cart (temporary access until payment is implemented)
+        let isInCart = false;
         if (!access || !access.isActive) {
+            const Cart = require('../models/Cart');
+            const cart = await Cart.findOne({ user: userId });
+            if (cart && cart.items && cart.items.length > 0) {
+                const productIdStr = String(productId);
+                isInCart = cart.items.some(item => {
+                    const itemProductId = item.product?._id 
+                        ? String(item.product._id) 
+                        : String(item.product);
+                    return itemProductId === productIdStr;
+                });
+            }
+        }
+
+        if (!access || !access.isActive) {
+            // If product is in cart, allow access (temporary until payment is implemented)
+            if (isInCart) {
+                const productRepository = require('../repositories/productRepository');
+                const product = await productRepository.findById(productId);
+                
+                if (product && product.digitalFile) {
+                    // Return direct PDF URL for cart-based access
+                    return res.status(200).json({
+                        success: true,
+                        message: 'eBook access granted (product in cart)',
+                        data: {
+                            accessToken: 'CART_TOKEN', // Temporary token for cart items
+                            product: {
+                                id: product._id,
+                                name: product.name,
+                                slug: product.slug,
+                                digitalFile: product.digitalFile
+                            },
+                            tokenExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
+                            lastAccess: new Date(),
+                            isCartAccess: true,
+                            directPDFUrl: product.digitalFile // Direct URL for cart-based access
+                        }
+                    });
+                }
+            }
+
             // If testing mode enabled, allow direct PDF access
             if (isTestingMode) {
                 const productRepository = require('../repositories/productRepository');
@@ -96,7 +139,7 @@ exports.geteBookAccess = async (req, res, next) => {
 
             return res.status(404).json({
                 success: false,
-                message: 'eBook access not found. Please ensure you have purchased this eBook.'
+                message: 'eBook access not found. Please ensure you have purchased this eBook or added it to your cart.'
             });
         }
 

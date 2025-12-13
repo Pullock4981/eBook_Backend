@@ -57,12 +57,8 @@ const productSchema = new mongoose.Schema({
         type: Number,
         default: null,
         min: [0, 'Discount price cannot be negative'],
-        validate: {
-            validator: function (value) {
-                return value === null || value < this.price;
-            },
-            message: 'Discount price must be less than regular price'
-        }
+        // Validation is handled in pre-save hook and service layer
+        // to properly handle updates where price might be changing
     },
     // For physical products
     stock: {
@@ -197,6 +193,19 @@ productSchema.pre('save', function (next) {
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/(^-|-$)/g, '');
     }
+    
+    // Validate discount price in pre-save hook ONLY for new documents
+    // For updates (findByIdAndUpdate), validation is handled in service layer
+    // Pre-save hook doesn't run for findByIdAndUpdate, so this is safe
+    if (this.isNew && this.discountPrice !== null && this.discountPrice !== undefined && this.price !== undefined) {
+        const discountNum = typeof this.discountPrice === 'number' ? this.discountPrice : parseFloat(this.discountPrice);
+        const priceNum = typeof this.price === 'number' ? this.price : parseFloat(this.price);
+        
+        if (!isNaN(discountNum) && !isNaN(priceNum) && discountNum >= priceNum) {
+            return next(new Error('Discount price must be less than regular price'));
+        }
+    }
+    
     next();
 });
 

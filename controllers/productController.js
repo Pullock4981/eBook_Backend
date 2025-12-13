@@ -400,6 +400,7 @@ exports.getFeaturedProducts = async (req, res, next) => {
 exports.proxyPDF = async (req, res, next) => {
     try {
         const { id } = req.params;
+        const userId = req.userId; // May be undefined if not authenticated
 
         if (!id) {
             return res.status(400).json({
@@ -435,6 +436,7 @@ exports.proxyPDF = async (req, res, next) => {
             });
         }
 
+        // NO ACCESS CHECKS - Direct PDF access from Cloudinary
         const pdfURL = product.digitalFile;
         console.log('Proxying PDF:', pdfURL);
 
