@@ -452,10 +452,9 @@ exports.proxyPDF = async (req, res, next) => {
 
                 const pdfBuffer = Buffer.from(response.data);
 
-                // Set CORS headers
-                res.setHeader('Access-Control-Allow-Origin', '*');
-                res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-                res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+                // CORS headers are handled by the CORS middleware
+                // Don't set Access-Control-Allow-Origin manually when credentials are used
+                // The CORS middleware will set the correct origin based on the request
 
                 // Set PDF headers
                 res.setHeader('Content-Type', 'application/pdf');
