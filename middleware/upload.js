@@ -31,6 +31,12 @@ const pdfStorage = new CloudinaryStorage({
     },
 });
 
+// Check if Cloudinary is configured
+if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+    console.warn('⚠️  WARNING: Cloudinary environment variables are not set. File uploads will fail.');
+    console.warn('   Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET');
+}
+
 // Configure multer for images
 const imageUpload = multer({
     storage: imageStorage,
