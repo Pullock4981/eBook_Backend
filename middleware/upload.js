@@ -38,8 +38,12 @@ if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !pr
 }
 
 // Configure multer for images
+// Use memory storage to ensure we have buffer access for manual Cloudinary upload
+// This gives us more control and ensures we can handle uploads even if CloudinaryStorage fails
+const memoryStorage = multer.memoryStorage();
+
 const imageUpload = multer({
-    storage: imageStorage,
+    storage: memoryStorage, // Use memory storage instead of CloudinaryStorage
     limits: {
         fileSize: 5 * 1024 * 1024, // 5MB max file size
     },
