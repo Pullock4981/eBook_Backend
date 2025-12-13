@@ -53,20 +53,22 @@ exports.geteBookAccess = async (req, res, next) => {
     try {
         const userId = req.userId;
         const { productId } = req.params;
-        const user = req.user; // User object from auth middleware
 
         // Find access for this user and product
         const eBookAccessRepository = require('../repositories/eBookAccessRepository');
         const access = await eBookAccessRepository.findByUserAndProduct(userId, productId);
 
-        // TESTING MODE: Allow admin users to access any PDF without purchase
-        // Remove this in production or add environment variable check
-        const isAdmin = user && user.role === 'admin';
-        const isTestingMode = process.env.NODE_ENV !== 'production' || process.env.ALLOW_TESTING_ACCESS === 'true';
+        // TESTING MODE: Allow all authenticated users to access PDFs without purchase
+        // In development: all authenticated users can access
+        // In production: only if ALLOW_TESTING_ACCESS='true' or user is admin
+        const isDevelopment = process.env.NODE_ENV !== 'production';
+        const allowTestingAccess = process.env.ALLOW_TESTING_ACCESS === 'true';
+        const isAdmin = req.user && req.user.role === 'admin';
+        const isTestingMode = isDevelopment || allowTestingAccess || isAdmin;
 
         if (!access || !access.isActive) {
-            // If admin or testing mode, allow direct PDF access
-            if (isAdmin || isTestingMode) {
+            // If testing mode enabled, allow direct PDF access
+            if (isTestingMode) {
                 const productRepository = require('../repositories/productRepository');
                 const product = await productRepository.findById(productId);
                 
