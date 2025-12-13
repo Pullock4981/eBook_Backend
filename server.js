@@ -68,14 +68,10 @@ app.use(cors({
         // When credentials are used, we must return the specific origin, not true
         // This is required by CORS spec when credentials: true
         
-        // Allow requests with no origin (like mobile apps, Postman, etc.)
-        // But for credentials mode, we need to return a specific origin
+        // Allow requests with no origin (like mobile apps, Postman, server-to-server, etc.)
+        // These are typically safe as they don't use credentials
         if (!origin) {
-            // For no-origin requests, allow but don't set credentials
-            // In production, you might want to reject these
-            if (process.env.NODE_ENV === 'production') {
-                return callback(new Error('Origin required in production'));
-            }
+            // Allow no-origin requests (they won't use credentials anyway)
             return callback(null, true);
         }
 
@@ -98,6 +94,7 @@ app.use(cors({
             if (process.env.NODE_ENV !== 'production') {
                 callback(null, origin); // Return the origin, not true
             } else {
+                // In production, only allow specific origins
                 callback(new Error('Not allowed by CORS'));
             }
         }
