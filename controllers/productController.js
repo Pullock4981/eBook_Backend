@@ -348,25 +348,34 @@ exports.getFrequentlyDownloaded = async (req, res, next) => {
 };
 
 /**
- * Get user's favorited products for home page
+ * Get most viewed/clicked products for home page (Favourited section)
  * GET /api/products/sections/favourited
  */
 exports.getFavourited = async (req, res, next) => {
     try {
         const { limit = 3 } = req.query;
-        const userId = req.userId; // From auth middleware
-
-        if (!userId) {
-            return res.status(401).json({
-                success: false,
-                message: 'Authentication required'
-            });
-        }
-
-        const products = await productService.getFavourited(userId, parseInt(limit));
+        const products = await productService.getFavourited(parseInt(limit));
         res.status(200).json({
             success: true,
-            message: 'Favourited products retrieved successfully',
+            message: 'Most viewed products retrieved successfully',
+            data: products
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Get newly added products for home page
+ * GET /api/products/sections/new-added
+ */
+exports.getNewAdded = async (req, res, next) => {
+    try {
+        const { limit = 3 } = req.query;
+        const products = await productService.getNewAdded(parseInt(limit));
+        res.status(200).json({
+            success: true,
+            message: 'Newly added products retrieved successfully',
             data: products
         });
     } catch (error) {

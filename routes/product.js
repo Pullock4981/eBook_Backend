@@ -21,9 +21,8 @@ router.get('/sections/last-updates', productController.getLastUpdates);
 router.get('/sections/coming-soon', productController.getComingSoon);
 router.get('/sections/popular-reader', productController.getPopularReader);
 router.get('/sections/frequently-downloaded', productController.getFrequentlyDownloaded);
-
-// Home page sections (authenticated)
-router.get('/sections/favourited', authenticate, productController.getFavourited);
+router.get('/sections/favourited', productController.getFavourited); // Most viewed/clicked products
+router.get('/sections/new-added', productController.getNewAdded); // Newly added products
 
 // PDF proxy route (must be before /:id route)
 router.get('/:id/pdf-proxy', productController.proxyPDF);

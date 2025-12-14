@@ -480,13 +480,21 @@ const getDigitalProducts = async (page = 1, limit = 20) => {
 };
 
 /**
- * Get user's favorited products for home page
- * @param {String} userId - User ID
+ * Get most viewed/clicked products for home page (Favourited section)
  * @param {Number} limit - Number of products to return
- * @returns {Promise<Array>} - Array of products
+ * @returns {Promise<Array>} - Array of products sorted by views
  */
-const getFavourited = async (userId, limit = 3) => {
-    return await productRepository.getFavourited(userId, limit);
+const getFavourited = async (limit = 3) => {
+    return await productRepository.getFavourited(limit);
+};
+
+/**
+ * Get newly added products for home page
+ * @param {Number} limit - Number of products to return
+ * @returns {Promise<Array>} - Array of products sorted by createdAt
+ */
+const getNewAdded = async (limit = 3) => {
+    return await productRepository.getNewAdded(limit);
 };
 
 module.exports = {
@@ -505,6 +513,7 @@ module.exports = {
     getPopularReader,
     getFrequentlyDownloaded,
     getFavourited,
+    getNewAdded,
     getDigitalProducts
 };
 

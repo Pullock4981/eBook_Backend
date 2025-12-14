@@ -310,19 +310,29 @@ const getFrequentlyDownloaded = async (limit = 3) => {
 };
 
 /**
- * Get user's favorited products
- * @param {String} userId - User ID
+ * Get most viewed/clicked products (for Favourited section)
  * @param {Number} limit - Number of products to return
- * @returns {Promise<Array>} - Array of products
+ * @returns {Promise<Array>} - Array of products sorted by views
  */
-const getFavourited = async (userId, limit = 3) => {
-    // Note: This requires a UserFavorite model or similar
-    // For now, we'll return products sorted by favoriteCount
-    // In future, implement proper user favorites tracking
+const getFavourited = async (limit = 3) => {
+    // Return products sorted by views (most clicked/viewed items)
     return await Product.find({ isActive: true })
         .populate('category', 'name slug')
         .populate('subcategory', 'name slug')
-        .sort({ favoriteCount: -1, createdAt: -1 })
+        .sort({ views: -1, createdAt: -1 })
+        .limit(parseInt(limit));
+};
+
+/**
+ * Get newly added products
+ * @param {Number} limit - Number of products to return
+ * @returns {Promise<Array>} - Array of products sorted by createdAt
+ */
+const getNewAdded = async (limit = 3) => {
+    return await Product.find({ isActive: true })
+        .populate('category', 'name slug')
+        .populate('subcategory', 'name slug')
+        .sort({ createdAt: -1 })
         .limit(parseInt(limit));
 };
 
@@ -379,6 +389,7 @@ module.exports = {
     getPopularReader,
     getFrequentlyDownloaded,
     getFavourited,
+    getNewAdded,
     getDigitalProducts
 };
 

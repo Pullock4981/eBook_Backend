@@ -80,12 +80,20 @@ exports.getAllAffiliates = async (req, res, next) => {
 
         console.log('Mapped affiliates count:', mappedAffiliates.length);
 
+        // Map pagination to match frontend expectations
+        const paginationResponse = {
+            currentPage: result.pagination?.page || result.pagination?.currentPage || 1,
+            totalPages: result.pagination?.pages || result.pagination?.totalPages || 1,
+            totalItems: result.pagination?.total || 0,
+            itemsPerPage: result.pagination?.limit || result.pagination?.itemsPerPage || 10
+        };
+
         res.status(200).json({
             success: true,
             message: 'Affiliates retrieved successfully',
             data: {
                 affiliates: mappedAffiliates,
-                pagination: result.pagination
+                pagination: paginationResponse
             }
         });
     } catch (error) {
