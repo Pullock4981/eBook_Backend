@@ -295,20 +295,16 @@ exports.generateCoupon = async (req, res, next) => {
             });
         }
 
-        // Check if affiliate is active
-        if (affiliate.status !== 'active') {
-            return res.status(403).json({
-                success: false,
-                message: 'Only active affiliates can generate coupons'
-            });
-        }
+        // Allow any affiliated user to generate coupon requests (backend will handle approval)
+        // No need to check status - pending/active/rejected all can request coupons
+        // Admin will approve/reject them
 
         // Create coupon
         const coupon = await couponService.createAffiliateCoupon(affiliate._id, couponData);
 
         res.status(201).json({
             success: true,
-            message: 'Coupon generated successfully',
+            message: 'Coupon request submitted successfully. Waiting for admin approval.',
             data: {
                 coupon: {
                     id: coupon._id,
@@ -323,6 +319,8 @@ exports.generateCoupon = async (req, res, next) => {
                     description: coupon.description,
                     oneTimeUse: coupon.oneTimeUse,
                     isActive: coupon.isActive,
+                    approvalStatus: coupon.approvalStatus,
+                    totalEarnings: coupon.totalEarnings || 0,
                     createdAt: coupon.createdAt
                 }
             }
@@ -370,6 +368,8 @@ exports.getCoupons = async (req, res, next) => {
                     description: c.description,
                     oneTimeUse: c.oneTimeUse,
                     isActive: c.isActive,
+                    approvalStatus: c.approvalStatus,
+                    totalEarnings: c.totalEarnings || 0,
                     createdAt: c.createdAt
                 })),
                 pagination: result.pagination

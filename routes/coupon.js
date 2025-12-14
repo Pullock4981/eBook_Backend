@@ -26,6 +26,11 @@ router.post(
 
 // Admin routes (require authentication and admin role)
 router.get('/', authenticate, requireAdmin, couponController.getAllCoupons);
+
+// Admin routes for affiliate coupon management (MUST be before /:id route)
+router.get('/pending-affiliate', authenticate, requireAdmin, couponController.getPendingAffiliateCoupons);
+
+// Parameterized routes (MUST be after static routes like /pending-affiliate)
 router.get('/:id', authenticate, requireAdmin, couponController.getCouponById);
 router.post(
     '/',
@@ -62,6 +67,26 @@ router.delete(
     ],
     validate,
     couponController.deleteCoupon
+);
+router.post(
+    '/:id/approve',
+    authenticate,
+    requireAdmin,
+    [
+        commonRules.objectId('id')
+    ],
+    validate,
+    couponController.approveAffiliateCoupon
+);
+router.post(
+    '/:id/reject',
+    authenticate,
+    requireAdmin,
+    [
+        commonRules.objectId('id')
+    ],
+    validate,
+    couponController.rejectAffiliateCoupon
 );
 
 module.exports = router;

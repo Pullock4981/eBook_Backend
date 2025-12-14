@@ -38,8 +38,9 @@ const commonRules = {
     // MongoDB ObjectId validation
     objectId: (field = 'id') => {
         const { param, body, query } = require('express-validator');
-        const location = field.includes('params') ? param : field.includes('query') ? query : body;
-        return location(field)
+        // For route params (like /:id), always use param()
+        // This is the most common case for ObjectId validation
+        return param(field)
             .isMongoId()
             .withMessage(`${field} must be a valid MongoDB ObjectId`);
     },

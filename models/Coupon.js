@@ -57,6 +57,24 @@ const couponSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    // Approval status for affiliate coupons (pending, approved, rejected)
+    approvalStatus: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected'],
+        default: null // null means not an affiliate coupon or auto-approved
+    },
+    // Affiliate who created this coupon
+    affiliate: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Affiliate',
+        default: null
+    },
+    // Total earnings from this coupon (for affiliate coupons)
+    totalEarnings: {
+        type: Number,
+        default: 0,
+        min: [0, 'Total earnings cannot be negative']
+    },
     // Description
     description: {
         type: String,

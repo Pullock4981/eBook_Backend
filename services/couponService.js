@@ -122,6 +122,17 @@ const validateCoupon = async (code, cartAmount) => {
         throw new Error('Invalid coupon code');
     }
 
+    // For affiliate coupons, check approval status
+    if (coupon.affiliate) {
+        if (coupon.approvalStatus !== 'approved') {
+            if (coupon.approvalStatus === 'pending') {
+                throw new Error('This coupon is pending admin approval');
+            } else if (coupon.approvalStatus === 'rejected') {
+                throw new Error('This coupon has been rejected');
+            }
+        }
+    }
+
     // Check if coupon is valid
     const validityCheck = coupon.isValid();
     if (!validityCheck.valid) {
@@ -279,13 +290,41 @@ const generateCouponCode = async () => {
  * @returns {Promise<Object>} - Created coupon
  */
 const createAffiliateCoupon = async (affiliateId, couponData) => {
-    const code = await generateCouponCode();
+    // Check if affiliate already has a pending coupon request
+    // Use mongoose.Types.ObjectId to ensure proper comparison
+    const mongoose = require('mongoose');
+    const pendingCoupons = await couponRepository.findPendingAffiliateCoupons(
+        { affiliate: mongoose.Types.ObjectId(affiliateId) }, 
+        1, 
+        1
+    );
+    if (pendingCoupons.coupons && pendingCoupons.coupons.length > 0) {
+        throw new Error('You already have a pending coupon request. Please wait for admin approval before creating a new one.');
+    }
+    
+    // Use provided code or generate one
+    let code;
+    if (couponData.code && couponData.code.trim()) {
+        // User provided code - validate uniqueness
+        const trimmedCode = couponData.code.trim().toUpperCase();
+        const existing = await couponRepository.findByCode(trimmedCode);
+        if (existing) {
+            throw new Error('Coupon code already exists. Please choose a different code.');
+        }
+        code = trimmedCode;
+    } else {
+        // Auto-generate code
+        code = await generateCouponCode();
+    }
+    
     const dataToCreate = {
         ...couponData,
-        code,
+        code, // Use provided code or auto-generated
         affiliate: affiliateId,
-        isActive: true, // Affiliate coupons are active by default
+        approvalStatus: 'pending', // Affiliate coupons need admin approval
+        isActive: false, // Inactive until approved
         usedCount: 0,
+        totalEarnings: 0, // Track earnings from this coupon
         // Ensure usageLimit is at least 1
         usageLimit: Math.max(1, couponData.usageLimit || 1),
         // Ensure value is positive
@@ -300,8 +339,14 @@ const createAffiliateCoupon = async (affiliateId, couponData) => {
     if (dataToCreate.type === 'percentage' && dataToCreate.value > 100) {
         throw new Error('Percentage discount cannot exceed 100%');
     }
-    if (dataToCreate.expiryDate && new Date(dataToCreate.expiryDate) < new Date()) {
-        throw new Error('Expiry date cannot be in the past');
+    if (dataToCreate.expiryDate) {
+        const expiryDate = new Date(dataToCreate.expiryDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Reset time to start of day for comparison
+        expiryDate.setHours(0, 0, 0, 0);
+        if (expiryDate < today) {
+            throw new Error('Expiry date cannot be in the past');
+        }
     }
 
     const coupon = await couponRepository.create(dataToCreate);
@@ -321,6 +366,81 @@ const getAffiliateCoupons = async (affiliateId, page = 1, limit = 10) => {
     return await couponRepository.findByAffiliate(affiliateId, {}, pageNum, limitNum);
 };
 
+/**
+ * Approve affiliate coupon
+ * @param {String} couponId - Coupon ID
+ * @returns {Promise<Object>} - Updated coupon
+ */
+const approveAffiliateCoupon = async (couponId) => {
+    const coupon = await couponRepository.findById(couponId);
+    if (!coupon) {
+        throw new Error('Coupon not found');
+    }
+    if (!coupon.affiliate) {
+        throw new Error('This is not an affiliate coupon');
+    }
+    if (coupon.approvalStatus === 'approved') {
+        throw new Error('Coupon is already approved');
+    }
+    
+    coupon.approvalStatus = 'approved';
+    coupon.isActive = true; // Activate the coupon
+    return await coupon.save();
+};
+
+/**
+ * Reject affiliate coupon
+ * @param {String} couponId - Coupon ID
+ * @returns {Promise<Object>} - Updated coupon
+ */
+const rejectAffiliateCoupon = async (couponId) => {
+    const coupon = await couponRepository.findById(couponId);
+    if (!coupon) {
+        throw new Error('Coupon not found');
+    }
+    if (!coupon.affiliate) {
+        throw new Error('This is not an affiliate coupon');
+    }
+    if (coupon.approvalStatus === 'rejected') {
+        throw new Error('Coupon is already rejected');
+    }
+    
+    coupon.approvalStatus = 'rejected';
+    coupon.isActive = false; // Deactivate the coupon
+    return await coupon.save();
+};
+
+/**
+ * Get pending affiliate coupons (for admin)
+ * @param {Number} page - Page number
+ * @param {Number} limit - Items per page
+ * @returns {Promise<Object>} - Coupons with pagination
+ */
+const getPendingAffiliateCoupons = async (page = 1, limit = 10) => {
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 10));
+    return await couponRepository.findPendingAffiliateCoupons({}, pageNum, limitNum);
+};
+
+/**
+ * Add earnings to affiliate coupon
+ * @param {String} couponId - Coupon ID
+ * @param {Number} earnings - Earnings amount to add
+ * @returns {Promise<Object>} - Updated coupon
+ */
+const addCouponEarnings = async (couponId, earnings) => {
+    const coupon = await couponRepository.findById(couponId);
+    if (!coupon) {
+        throw new Error('Coupon not found');
+    }
+    if (!coupon.affiliate) {
+        return coupon; // Not an affiliate coupon, no earnings tracking
+    }
+    
+    coupon.totalEarnings = (coupon.totalEarnings || 0) + earnings;
+    return await coupon.save();
+};
+
 module.exports = {
     createCoupon,
     getAllCoupons,
@@ -333,6 +453,10 @@ module.exports = {
     incrementCouponUsage,
     getActiveCoupons,
     createAffiliateCoupon,
-    getAffiliateCoupons
+    getAffiliateCoupons,
+    approveAffiliateCoupon,
+    rejectAffiliateCoupon,
+    getPendingAffiliateCoupons,
+    addCouponEarnings
 };
 

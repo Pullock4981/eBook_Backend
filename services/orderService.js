@@ -122,6 +122,14 @@ const createOrder = async (userId, orderData) => {
                 // Discount already calculated in cart
                 // Increment coupon usage
                 await couponService.incrementCouponUsage(couponId);
+                
+                // Track earnings for affiliate coupons
+                // Earnings = 10% of discount amount (can be configured)
+                if (coupon.affiliate && coupon.approvalStatus === 'approved') {
+                    const earningsRate = 0.10; // 10% of discount goes to affiliate
+                    const earnings = discount * earningsRate;
+                    await couponService.addCouponEarnings(couponId, earnings);
+                }
             }
         } catch (error) {
             // Coupon not found - ignore
@@ -328,8 +336,29 @@ const updatePaymentStatus = async (orderId, paymentStatus, transactionId = null,
             console.error('Failed to create eBook access:', error.message);
         }
 
-        // Create affiliate commission if referral code exists
-        if (order.referralCode) {
+        // Create affiliate commission based on coupon code (priority) or referral code
+        // Priority: Coupon code > Referral code
+        let affiliateId = null;
+        let commissionSource = null;
+        let sourceCode = null;
+        
+        // First, check if order has an affiliate coupon
+        if (order.coupon) {
+            try {
+                const coupon = await couponService.getCouponById(order.coupon);
+                if (coupon && coupon.affiliate && coupon.approvalStatus === 'approved' && coupon.isActive) {
+                    affiliateId = coupon.affiliate._id || coupon.affiliate;
+                    commissionSource = 'coupon';
+                    sourceCode = coupon.code;
+                    console.log(`Commission will be created for affiliate ${affiliateId} from coupon ${coupon.code}`);
+                }
+            } catch (error) {
+                console.error('Failed to get coupon for commission:', error.message);
+            }
+        }
+        
+        // If no coupon affiliate, check referral code (fallback)
+        if (!affiliateId && order.referralCode) {
             try {
                 const affiliateService = require('./affiliateService');
                 await affiliateService.createCommission(
@@ -338,9 +367,53 @@ const updatePaymentStatus = async (orderId, paymentStatus, transactionId = null,
                     order.user.toString(),
                     order.total
                 );
+                console.log(`Commission created from referral code ${order.referralCode}`);
+            } catch (error) {
+                console.error('Failed to create commission from referral code:', error.message);
+            }
+        } else if (affiliateId) {
+            // Create commission from coupon affiliate
+            try {
+                const affiliateService = require('./affiliateService');
+                const affiliateRepository = require('../repositories/affiliateRepository');
+                const commissionRepository = require('../repositories/commissionRepository');
+                
+                // Get affiliate details
+                const affiliate = await affiliateRepository.findById(affiliateId);
+                if (!affiliate || affiliate.status !== 'active') {
+                    console.log(`Affiliate ${affiliateId} not found or not active`);
+                    return await orderRepository.updatePaymentStatus(orderId, paymentStatus, transactionId);
+                }
+                
+                // Check if commission already exists for this order
+                const existingCommission = await commissionRepository.findByOrder(orderId);
+                if (existingCommission) {
+                    console.log(`Commission already exists for order ${orderId}`);
+                    return await orderRepository.updatePaymentStatus(orderId, paymentStatus, transactionId);
+                }
+                
+                // Calculate commission based on order total
+                const commissionAmount = (order.total * affiliate.commissionRate) / 100;
+                
+                // Create commission record
+                await commissionRepository.create({
+                    affiliate: affiliateId,
+                    order: orderId,
+                    referredUser: order.user,
+                    orderAmount: order.total,
+                    amount: commissionAmount,
+                    commissionRate: affiliate.commissionRate,
+                    status: 'pending',
+                    notes: `Commission from coupon code: ${sourceCode}`
+                });
+                
+                // Update affiliate statistics
+                await affiliate.updateStats();
+                
+                console.log(`Commission created: ${commissionAmount} (${affiliate.commissionRate}% of ${order.total}) for affiliate ${affiliateId} from coupon ${sourceCode}`);
             } catch (error) {
                 // Log error but don't fail payment update
-                console.error('Failed to create affiliate commission:', error.message);
+                console.error('Failed to create affiliate commission from coupon:', error.message);
             }
         }
     }

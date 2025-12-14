@@ -158,3 +158,86 @@ exports.deleteCoupon = async (req, res, next) => {
     }
 };
 
+/**
+ * Get pending affiliate coupons (Admin)
+ * GET /api/coupons/pending-affiliate
+ */
+exports.getPendingAffiliateCoupons = async (req, res, next) => {
+    try {
+        const { page = 1, limit = 10 } = req.query;
+        const result = await couponService.getPendingAffiliateCoupons(page, limit);
+        res.status(200).json({
+            success: true,
+            message: 'Pending affiliate coupons retrieved successfully',
+            data: {
+                coupons: result.coupons.map(c => ({
+                    id: c._id,
+                    code: c.code,
+                    type: c.type,
+                    value: c.value,
+                    usageLimit: c.usageLimit,
+                    minPurchase: c.minPurchase,
+                    maxDiscount: c.maxDiscount,
+                    expiryDate: c.expiryDate,
+                    description: c.description,
+                    oneTimeUse: c.oneTimeUse,
+                    approvalStatus: c.approvalStatus,
+                    affiliate: c.affiliate,
+                    createdAt: c.createdAt
+                })),
+                pagination: result.pagination
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Approve affiliate coupon (Admin)
+ * POST /api/coupons/:id/approve
+ */
+exports.approveAffiliateCoupon = async (req, res, next) => {
+    try {
+        const coupon = await couponService.approveAffiliateCoupon(req.params.id);
+        res.status(200).json({
+            success: true,
+            message: 'Coupon approved successfully',
+            data: {
+                coupon: {
+                    id: coupon._id,
+                    code: coupon.code,
+                    approvalStatus: coupon.approvalStatus,
+                    isActive: coupon.isActive
+                }
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Reject affiliate coupon (Admin)
+ * POST /api/coupons/:id/reject
+ */
+exports.rejectAffiliateCoupon = async (req, res, next) => {
+    try {
+        const coupon = await couponService.rejectAffiliateCoupon(req.params.id);
+        res.status(200).json({
+            success: true,
+            message: 'Coupon rejected successfully',
+            data: {
+                coupon: {
+                    id: coupon._id,
+                    code: coupon.code,
+                    approvalStatus: coupon.approvalStatus,
+                    isActive: coupon.isActive
+                }
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+

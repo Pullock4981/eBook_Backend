@@ -63,6 +63,20 @@ const findByReferralCode = async (referralCode) => {
 };
 
 /**
+ * Find affiliate by ID
+ * @param {String} affiliateId - Affiliate ID
+ * @returns {Promise<Object|null>} - Affiliate or null
+ */
+const findById = async (affiliateId) => {
+    try {
+        return await Affiliate.findById(affiliateId)
+            .populate('user', 'profile.name profile.email mobile');
+    } catch (error) {
+        throw new Error(`Failed to find affiliate by ID: ${error.message}`);
+    }
+};
+
+/**
  * Find all affiliates with filters
  * @param {Object} filters - Filter options
  * @param {Number} page - Page number
@@ -247,6 +261,7 @@ module.exports = {
     create,
     findByUser,
     findByReferralCode,
+    findById,
     findAll,
     update,
     approve,
