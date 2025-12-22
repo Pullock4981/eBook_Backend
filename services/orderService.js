@@ -52,7 +52,7 @@ const createOrder = async (userId, orderData) => {
     }
 
     // Validate payment method
-    const validPaymentMethods = ['sslcommerz', 'bkash', 'nagad', 'cash_on_delivery'];
+    const validPaymentMethods = ['bkash', 'nagad', 'cash_on_delivery'];
     if (!orderData.paymentMethod || !validPaymentMethods.includes(orderData.paymentMethod)) {
         throw new Error('Invalid payment method');
     }

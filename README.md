@@ -65,7 +65,7 @@ npm start
 
 Open your browser or use Postman:
 ```
-GET http://localhost:5000/
+GET https://e-book-backend-tau.vercel.app/
 ```
 
 Expected response:

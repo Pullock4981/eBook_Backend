@@ -15,19 +15,13 @@ router.post(
     '/initiate',
     authenticate,
     [
-        commonRules.objectId('orderId'),
-        body('paymentMethod').isIn(['sslcommerz', 'bkash', 'nagad', 'cash_on_delivery'])
+        commonRules.objectIdBody('orderId'),
+        body('paymentMethod').isIn(['bkash', 'nagad', 'cash_on_delivery'])
             .withMessage('Invalid payment method')
     ],
     validate,
     paymentController.initiatePayment
 );
-
-// SSLCommerz webhooks and callbacks
-router.post('/sslcommerz/webhook', paymentController.sslcommerzWebhook);
-router.get('/sslcommerz/success', paymentController.sslcommerzSuccess);
-router.get('/sslcommerz/fail', paymentController.sslcommerzFail);
-router.get('/sslcommerz/cancel', paymentController.sslcommerzCancel);
 
 // bKash callback
 router.post('/bkash/callback', paymentController.bkashCallback);

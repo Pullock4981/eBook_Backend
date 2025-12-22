@@ -154,7 +154,7 @@
 
 1. **Register or Login:**
    ```bash
-   POST http://localhost:5000/api/auth/register
+   POST https://e-book-backend-tau.vercel.app/api/auth/register
    Body: { "mobile": "01712345678" }
    ```
 
@@ -164,7 +164,7 @@
 
 3. **Verify OTP:**
    ```bash
-   POST http://localhost:5000/api/auth/verify-otp
+   POST https://e-book-backend-tau.vercel.app/api/auth/verify-otp
    Body: { "mobile": "01712345678", "otp": "XXXXXX" }
    ```
 

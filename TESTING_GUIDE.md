@@ -12,7 +12,7 @@
 
 ### Test Basic Health Check
 ```bash
-GET http://localhost:5000/api/health
+GET https://e-book-backend-tau.vercel.app/api/health
 ```
 
 **Expected Response:**
@@ -49,14 +49,14 @@ For now, you can manually create a test user and generate token, or wait for Par
 
 ### 1. Get User Profile
 ```bash
-GET http://localhost:5000/api/users/me
+GET https://e-book-backend-tau.vercel.app/api/users/me
 Headers:
   Authorization: Bearer <token>
 ```
 
 ### 2. Update Profile
 ```bash
-PUT http://localhost:5000/api/users/me
+PUT https://e-book-backend-tau.vercel.app/api/users/me
 Headers:
   Authorization: Bearer <token>
   Content-Type: application/json
@@ -70,7 +70,7 @@ Body:
 
 ### 3. Change Password
 ```bash
-PUT http://localhost:5000/api/users/me/password
+PUT https://e-book-backend-tau.vercel.app/api/users/me/password
 Headers:
   Authorization: Bearer <token>
   Content-Type: application/json
@@ -84,7 +84,7 @@ Body:
 
 ### 4. Set Password (First Time)
 ```bash
-POST http://localhost:5000/api/users/me/password
+POST https://e-book-backend-tau.vercel.app/api/users/me/password
 Headers:
   Authorization: Bearer <token>
   Content-Type: application/json
@@ -97,14 +97,14 @@ Body:
 
 ### 5. Get Addresses
 ```bash
-GET http://localhost:5000/api/users/me/addresses
+GET https://e-book-backend-tau.vercel.app/api/users/me/addresses
 Headers:
   Authorization: Bearer <token>
 ```
 
 ### 6. Create Address
 ```bash
-POST http://localhost:5000/api/users/me/addresses
+POST https://e-book-backend-tau.vercel.app/api/users/me/addresses
 Headers:
   Authorization: Bearer <token>
   Content-Type: application/json
@@ -125,7 +125,7 @@ Body:
 
 ### 7. Update Address
 ```bash
-PUT http://localhost:5000/api/users/me/addresses/{addressId}
+PUT https://e-book-backend-tau.vercel.app/api/users/me/addresses/{addressId}
 Headers:
   Authorization: Bearer <token>
   Content-Type: application/json
@@ -139,14 +139,14 @@ Body:
 
 ### 8. Delete Address
 ```bash
-DELETE http://localhost:5000/api/users/me/addresses/{addressId}
+DELETE https://e-book-backend-tau.vercel.app/api/users/me/addresses/{addressId}
 Headers:
   Authorization: Bearer <token>
 ```
 
 ### 9. Set Default Address
 ```bash
-PUT http://localhost:5000/api/users/me/addresses/{addressId}/default
+PUT https://e-book-backend-tau.vercel.app/api/users/me/addresses/{addressId}/default
 Headers:
   Authorization: Bearer <token>
 ```

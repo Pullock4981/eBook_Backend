@@ -60,8 +60,18 @@ const couponSchema = new mongoose.Schema({
     // Approval status for affiliate coupons (pending, approved, rejected)
     approvalStatus: {
         type: String,
-        enum: ['pending', 'approved', 'rejected'],
-        default: null // null means not an affiliate coupon or auto-approved
+        default: null, // null means not an affiliate coupon or auto-approved
+        required: false, // Make it optional so null is allowed
+        validate: {
+            validator: function(value) {
+                // Allow null/undefined or valid enum values
+                if (value === null || value === undefined) {
+                    return true; // null/undefined is allowed
+                }
+                return ['pending', 'approved', 'rejected'].includes(value);
+            },
+            message: 'Approval status must be null, pending, approved, or rejected'
+        }
     },
     // Affiliate who created this coupon
     affiliate: {

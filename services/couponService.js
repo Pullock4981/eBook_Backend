@@ -42,6 +42,12 @@ const createCoupon = async (couponData) => {
         throw new Error('Expiry date cannot be in the past');
     }
 
+    // Remove approvalStatus if it's null or undefined (for admin-created coupons)
+    // Only affiliate-created coupons should have approvalStatus
+    if (couponData.approvalStatus === null || couponData.approvalStatus === undefined) {
+        delete couponData.approvalStatus;
+    }
+
     // Create coupon
     const coupon = await couponRepository.create(couponData);
     return coupon;

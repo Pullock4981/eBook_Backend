@@ -21,8 +21,10 @@ router.get('/', cartController.getCart);
 router.post(
     '/items',
     [
-        commonRules.objectId('productId'),
-        body('quantity').isInt({ min: 1 }).withMessage('Quantity must be at least 1')
+        commonRules.objectIdBody('productId'),
+        body('quantity')
+            .isInt({ min: 1 })
+            .withMessage('Quantity must be at least 1')
     ],
     validate,
     cartController.addToCart

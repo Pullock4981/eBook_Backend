@@ -35,12 +35,20 @@ const validate = (req, res, next) => {
  * Validation rules for common fields
  */
 const commonRules = {
-    // MongoDB ObjectId validation
+    // MongoDB ObjectId validation for route params
     objectId: (field = 'id') => {
-        const { param, body, query } = require('express-validator');
+        const { param } = require('express-validator');
         // For route params (like /:id), always use param()
-        // This is the most common case for ObjectId validation
         return param(field)
+            .isMongoId()
+            .withMessage(`${field} must be a valid MongoDB ObjectId`);
+    },
+
+    // MongoDB ObjectId validation for request body
+    objectIdBody: (field = 'id') => {
+        const { body } = require('express-validator');
+        // For request body fields
+        return body(field)
             .isMongoId()
             .withMessage(`${field} must be a valid MongoDB ObjectId`);
     },

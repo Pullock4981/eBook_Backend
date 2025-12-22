@@ -81,7 +81,7 @@ npm run dev
 
 #### Check Health Endpoint (with DB status):
 ```bash
-GET http://localhost:5000/api/health
+GET https://e-book-backend-tau.vercel.app/api/health
 ```
 
 **Expected Response:**
@@ -101,7 +101,7 @@ GET http://localhost:5000/api/health
 
 #### Check Database Status Directly:
 ```bash
-GET http://localhost:5000/api/test/db-status
+GET https://e-book-backend-tau.vercel.app/api/test/db-status
 ```
 
 **Expected Response:**
@@ -124,7 +124,7 @@ GET http://localhost:5000/api/test/db-status
 
 #### Create Test Document:
 ```bash
-POST http://localhost:5000/api/test
+POST https://e-book-backend-tau.vercel.app/api/test
 Content-Type: application/json
 
 {
@@ -154,7 +154,7 @@ Content-Type: application/json
 
 #### Get All Test Documents:
 ```bash
-GET http://localhost:5000/api/test?page=1&limit=10
+GET https://e-book-backend-tau.vercel.app/api/test?page=1&limit=10
 ```
 
 **Expected Response:**
@@ -174,12 +174,12 @@ GET http://localhost:5000/api/test?page=1&limit=10
 
 #### Get Test by ID:
 ```bash
-GET http://localhost:5000/api/test/{id}
+GET https://e-book-backend-tau.vercel.app/api/test/{id}
 ```
 
 #### Update Test Document:
 ```bash
-PUT http://localhost:5000/api/test/{id}
+PUT https://e-book-backend-tau.vercel.app/api/test/{id}
 Content-Type: application/json
 
 {
@@ -190,7 +190,7 @@ Content-Type: application/json
 
 #### Delete Test Document:
 ```bash
-DELETE http://localhost:5000/api/test/{id}
+DELETE https://e-book-backend-tau.vercel.app/api/test/{id}
 ```
 
 ---
@@ -330,7 +330,7 @@ Before moving to Part 3, verify:
 
 1. **Create Test:**
    - Method: POST
-   - URL: `http://localhost:5000/api/test`
+   - URL: `https://e-book-backend-tau.vercel.app/api/test`
    - Body (JSON):
      ```json
      {
@@ -342,15 +342,15 @@ Before moving to Part 3, verify:
 
 2. **Get All Tests:**
    - Method: GET
-   - URL: `http://localhost:5000/api/test?page=1&limit=5`
+   - URL: `https://e-book-backend-tau.vercel.app/api/test?page=1&limit=5`
 
 3. **Get Test by ID:**
    - Method: GET
-   - URL: `http://localhost:5000/api/test/{paste_id_here}`
+   - URL: `https://e-book-backend-tau.vercel.app/api/test/{paste_id_here}`
 
 4. **Update Test:**
    - Method: PUT
-   - URL: `http://localhost:5000/api/test/{paste_id_here}`
+   - URL: `https://e-book-backend-tau.vercel.app/api/test/{paste_id_here}`
    - Body (JSON):
      ```json
      {
@@ -361,7 +361,7 @@ Before moving to Part 3, verify:
 
 5. **Delete Test:**
    - Method: DELETE
-   - URL: `http://localhost:5000/api/test/{paste_id_here}`
+   - URL: `https://e-book-backend-tau.vercel.app/api/test/{paste_id_here}`
 
 ---
 

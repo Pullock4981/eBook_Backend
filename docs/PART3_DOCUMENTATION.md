@@ -248,13 +248,13 @@ Before moving to Part 4, verify:
 ### Test Rate Limiting:
 ```bash
 # Make 101 requests quickly
-for i in {1..101}; do curl http://localhost:5000/api/test; done
+for i in {1..101}; do curl https://e-book-backend-tau.vercel.app/api/test; done
 # Should get rate limit error after 100 requests
 ```
 
 ### Test Input Sanitization:
 ```bash
-POST http://localhost:5000/api/test
+POST https://e-book-backend-tau.vercel.app/api/test
 {
   "name": "<script>alert('xss')</script>Test",
   "description": "<b>HTML</b> content"

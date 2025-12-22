@@ -49,7 +49,7 @@ npm run dev
 
 ### 3. Verify করুন
 
-Browser এ যান: http://localhost:5000/api/health
+Browser এ যান: https://e-book-backend-tau.vercel.app/api/health
 
 আপনি দেখবেন:
 ```json

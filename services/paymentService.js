@@ -1,7 +1,7 @@
 /**
  * Payment Service
  * Business logic layer for payment gateway integration
- * Supports SSLCommerz, bKash, and Nagad
+ * Supports bKash and Nagad
  */
 
 const axios = require('axios');
@@ -12,75 +12,9 @@ const orderRepository = require('../repositories/orderRepository');
  * Payment Gateway Types
  */
 const PAYMENT_GATEWAYS = {
-    SSLCOMMERZ: 'sslcommerz',
     BKASH: 'bkash',
     NAGAD: 'nagad',
     CASH_ON_DELIVERY: 'cash_on_delivery'
-};
-
-/**
- * Initiate payment with SSLCommerz
- * @param {Object} order - Order document
- * @returns {Promise<Object>} - Payment initiation result
- */
-const initiateSSLCommerzPayment = async (order) => {
-    const storeId = process.env.SSLCOMMERZ_STORE_ID;
-    const storePassword = process.env.SSLCOMMERZ_STORE_PASSWORD;
-    const isLive = process.env.SSLCOMMERZ_IS_LIVE === 'true';
-
-    if (!storeId || !storePassword) {
-        throw new Error('SSLCommerz credentials not configured');
-    }
-
-    const baseUrl = isLive
-        ? 'https://securepay.sslcommerz.com'
-        : 'https://sandbox.sslcommerz.com';
-
-    // Prepare payment data
-    const paymentData = {
-        store_id: storeId,
-        store_passwd: storePassword,
-        total_amount: order.total,
-        currency: 'BDT',
-        tran_id: order.orderId,
-        success_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/payment/success`,
-        fail_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/payment/fail`,
-        cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/payment/cancel`,
-        ipn_url: `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/payments/sslcommerz/webhook`,
-        cus_name: order.user.profile?.name || order.user.mobile,
-        cus_email: order.user.profile?.email || `${order.user.mobile}@ebook.com`,
-        cus_add1: order.shippingAddress?.addressLine1 || 'N/A',
-        cus_city: order.shippingAddress?.city || 'N/A',
-        cus_postcode: order.shippingAddress?.postalCode || '0000',
-        cus_country: 'Bangladesh',
-        cus_phone: order.user.mobile,
-        shipping_method: 'NO',
-        product_name: order.items.map(item => item.productSnapshot?.name || 'Product').join(', '),
-        product_category: 'E-commerce',
-        product_profile: 'general'
-    };
-
-    try {
-        const response = await axios.post(`${baseUrl}/gwprocess/v4/api.php`, paymentData, {
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
-            }
-        });
-
-        if (response.data.status === 'SUCCESS' && response.data.GatewayPageURL) {
-            return {
-                success: true,
-                gateway: 'sslcommerz',
-                paymentUrl: response.data.GatewayPageURL,
-                sessionKey: response.data.sessionkey,
-                orderId: order.orderId
-            };
-        } else {
-            throw new Error(response.data.failedreason || 'Payment initiation failed');
-        }
-    } catch (error) {
-        throw new Error(`SSLCommerz payment failed: ${error.response?.data?.message || error.message}`);
-    }
 };
 
 /**
@@ -128,7 +62,7 @@ const initiateBkashPayment = async (order) => {
             {
                 mode: '0011',
                 payerReference: order.user.mobile,
-                callbackURL: `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/payments/bkash/callback`,
+                callbackURL: `${process.env.BACKEND_URL || 'https://e-book-backend-tau.vercel.app'}/api/payments/bkash/callback`,
                 amount: order.total.toString(),
                 currency: 'BDT',
                 intent: 'sale',
@@ -192,7 +126,7 @@ const initiateNagadPayment = async (order) => {
             challenge,
             amount: order.total.toString(),
             currencyCode: '050',
-            callbackURL: `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/payments/nagad/callback`
+            callbackURL: `${process.env.BACKEND_URL || 'https://e-book-backend-tau.vercel.app'}/api/payments/nagad/callback`
         };
 
         // Create signature (simplified - actual implementation may vary)
@@ -255,9 +189,6 @@ const initiatePayment = async (orderId, paymentMethod) => {
 
     // Initiate payment based on method
     switch (paymentMethod) {
-        case PAYMENT_GATEWAYS.SSLCOMMERZ:
-            return await initiateSSLCommerzPayment(order);
-
         case PAYMENT_GATEWAYS.BKASH:
             return await initiateBkashPayment(order);
 
@@ -280,67 +211,6 @@ const initiatePayment = async (orderId, paymentMethod) => {
 
         default:
             throw new Error('Invalid payment method');
-    }
-};
-
-/**
- * Verify SSLCommerz payment
- * @param {Object} paymentData - Payment data from webhook
- * @returns {Promise<Object>} - Verification result
- */
-const verifySSLCommerzPayment = async (paymentData) => {
-    const { tran_id, val_id, amount, store_amount, currency, status } = paymentData;
-
-    // Verify payment with SSLCommerz
-    const storeId = process.env.SSLCOMMERZ_STORE_ID;
-    const storePassword = process.env.SSLCOMMERZ_STORE_PASSWORD;
-    const isLive = process.env.SSLCOMMERZ_IS_LIVE === 'true';
-    const baseUrl = isLive
-        ? 'https://securepay.sslcommerz.com'
-        : 'https://sandbox.sslcommerz.com';
-
-    try {
-        const response = await axios.get(
-            `${baseUrl}/validator/api/validationserverAPI.php`,
-            {
-                params: {
-                    val_id,
-                    store_id: storeId,
-                    store_passwd: storePassword,
-                    format: 'json'
-                }
-            }
-        );
-
-        if (response.data.status === 'VALID' || response.data.status === 'VALIDATED') {
-            // Find order by transaction ID
-            const order = await orderRepository.findByOrderId(tran_id);
-            if (!order) {
-                throw new Error('Order not found');
-            }
-
-            // Verify amount matches
-            if (parseFloat(amount) !== order.total) {
-                throw new Error('Payment amount mismatch');
-            }
-
-            // Update order payment status (with req for IP/device tracking)
-            const orderService = require('./orderService');
-            await orderService.updatePaymentStatus(order._id, 'paid', val_id, null);
-            // Update order status to confirmed
-            await orderRepository.updateStatus(order._id, 'confirmed');
-
-            return {
-                success: true,
-                orderId: order.orderId,
-                transactionId: val_id,
-                amount: parseFloat(amount)
-            };
-        } else {
-            throw new Error('Payment verification failed');
-        }
-    } catch (error) {
-        throw new Error(`SSLCommerz verification failed: ${error.message}`);
     }
 };
 
@@ -368,7 +238,6 @@ const verifyNagadPayment = async (paymentReferenceId) => {
 
 module.exports = {
     initiatePayment,
-    verifySSLCommerzPayment,
     verifyBkashPayment,
     verifyNagadPayment,
     PAYMENT_GATEWAYS

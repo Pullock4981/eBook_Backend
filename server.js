@@ -67,7 +67,7 @@ app.use(cors({
     origin: function (origin, callback) {
         // When credentials are used, we must return the specific origin, not true
         // This is required by CORS spec when credentials: true
-        
+
         // Allow requests with no origin (like mobile apps, Postman, server-to-server, etc.)
         // These are typically safe as they don't use credentials
         if (!origin) {
@@ -75,29 +75,8 @@ app.use(cors({
             return callback(null, true);
         }
 
-        // Check if origin is in allowed list
-        const isAllowed = allowedOrigins.some(allowedOrigin => {
-            if (typeof allowedOrigin === 'string') {
-                return origin === allowedOrigin;
-            } else if (allowedOrigin instanceof RegExp) {
-                return allowedOrigin.test(origin);
-            }
-            return false;
-        });
-
-        if (isAllowed) {
-            // Return the specific origin (not true) when credentials are used
-            // This ensures Access-Control-Allow-Origin is set to the origin, not *
-            callback(null, origin);
-        } else {
-            // For development, allow all origins (less secure but convenient)
-            if (process.env.NODE_ENV !== 'production') {
-                callback(null, origin); // Return the origin, not true
-            } else {
-                // In production, only allow specific origins
-                callback(new Error('Not allowed by CORS'));
-            }
-        }
+        // Allow ALL origins by returning the origin itself
+        callback(null, origin);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],

@@ -56,8 +56,10 @@ exports.uploadSingleImage = async (req, res, next) => {
                         resource_type: 'image',
                         transformation: [
                             { width: 1000, height: 1000, crop: 'limit' },
-                            { quality: 'auto' },
+                            { quality: 'auto:good' }, // Optimized quality for faster upload
                         ],
+                        eager: [], // Don't generate eager transformations
+                        eager_async: false, // Disable async transformations
                     },
                     (error, result) => {
                         if (error) {
@@ -127,71 +129,64 @@ exports.uploadMultipleImages = async (req, res, next) => {
         }
 
         const cloudinary = require('../utils/cloudinary').cloudinary;
-        const results = [];
-
-        // Process each file - with memory storage, we always upload manually
-        for (let i = 0; i < req.files.length; i++) {
-            const file = req.files[i];
-            
-            if (!file.buffer) {
-                console.error(`Multiple Images Upload - File ${i + 1}: No buffer available`);
-                continue;
-            }
-
-            try {
-                console.log(`Multiple Images Upload - File ${i + 1}: Uploading to Cloudinary...`);
-                const uploadResult = await new Promise((resolve, reject) => {
+        
+        // Process files in parallel for faster upload (optimized)
+        const uploadPromises = req.files
+            .filter(file => file.buffer) // Filter out files without buffer
+            .map((file, index) => {
+                return new Promise((resolve, reject) => {
                     cloudinary.uploader.upload_stream(
                         {
                             folder: 'ebook/products',
                             resource_type: 'image',
                             transformation: [
                                 { width: 1000, height: 1000, crop: 'limit' },
-                                { quality: 'auto' },
+                                { quality: 'auto:good' }, // Optimized quality for faster upload
                             ],
+                            eager: [], // Don't generate eager transformations
+                            eager_async: false, // Disable async transformations
                         },
                         (error, result) => {
                             if (error) {
-                                console.error(`Multiple Images Upload - File ${i + 1} error:`, error);
+                                console.error(`Multiple Images Upload - File ${index + 1} error:`, error);
                                 reject(error);
                             } else {
-                                resolve(result);
+                                resolve({
+                                    public_id: result.public_id,
+                                    secure_url: result.secure_url,
+                                    url: result.url,
+                                    width: result.width,
+                                    height: result.height,
+                                    format: result.format,
+                                    bytes: result.bytes,
+                                });
                             }
                         }
                     ).end(file.buffer);
                 });
+            });
 
-                const result = {
-                    public_id: uploadResult.public_id,
-                    secure_url: uploadResult.secure_url,
-                    url: uploadResult.url,
-                    width: uploadResult.width,
-                    height: uploadResult.height,
-                    format: uploadResult.format,
-                    bytes: uploadResult.bytes,
-                };
+        // Wait for all uploads to complete (parallel processing)
+        const results = await Promise.allSettled(uploadPromises);
+        
+        // Extract successful uploads
+        const successfulResults = results
+            .filter(result => result.status === 'fulfilled')
+            .map(result => result.value);
 
-                console.log(`Multiple Images Upload - File ${i + 1}: Upload successful`);
-                results.push(result);
-            } catch (uploadError) {
-                console.error(`Multiple Images Upload - File ${i + 1}: Upload failed:`, uploadError);
-                // Continue with other files even if one fails
-            }
-        }
-
-        if (results.length === 0) {
+        if (successfulResults.length === 0) {
             return res.status(500).json({
                 success: false,
                 message: 'Failed to upload any images. Please check Cloudinary configuration.',
             });
         }
 
-        console.log('Multiple Images Upload - Final results count:', results.length);
+        console.log('Multiple Images Upload - Final results count:', successfulResults.length);
 
         res.status(200).json({
             success: true,
             message: 'Images uploaded successfully',
-            data: results,
+            data: successfulResults,
         });
     } catch (error) {
         console.error('Multiple Images Upload Error:', error);

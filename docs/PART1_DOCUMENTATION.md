@@ -140,7 +140,7 @@ npm start
 ### Step 5: Test the Server
 Open browser or use Postman:
 ```
-GET http://localhost:5000/
+GET https://e-book-backend-tau.vercel.app/
 ```
 
 Expected response:
@@ -183,8 +183,8 @@ Before moving to Part 2, verify:
 - [ ] `.env` file created from `env.example`
 - [ ] MongoDB is running (local or Atlas)
 - [ ] `npm start` or `npm run dev` runs successfully
-- [ ] Server responds at `http://localhost:5000/`
-- [ ] Health check endpoint works: `http://localhost:5000/api/health`
+- [ ] Server responds at `https://e-book-backend-tau.vercel.app/`
+- [ ] Health check endpoint works: `https://e-book-backend-tau.vercel.app/api/health`
 - [ ] MongoDB connection successful (check console logs)
 
 ---
