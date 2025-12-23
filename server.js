@@ -52,9 +52,26 @@ const uploadRoutes = require('./routes/upload');
 app.use(helmet());
 
 // CORS configuration
-// Allow ALL origins for now to fix issues
+const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:3003',
+    'https://e-book-frontend-two.vercel.app',
+    'https://smartbookbd.com',
+    'https://www.smartbookbd.com'
+];
+
 app.use(cors({
-    origin: true, // This automatically sets Access-Control-Allow-Origin to the request origin
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.indexOf(origin) !== -1 || origin.startsWith('http://localhost:')) {
+            callback(null, true);
+        } else {
+            console.log('CORS Blocked for origin:', origin);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
