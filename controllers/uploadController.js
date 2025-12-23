@@ -36,9 +36,9 @@ exports.uploadSingleImage = async (req, res, next) => {
         // With memory storage, we always upload manually to Cloudinary
         // req.file will have: { fieldname, originalname, encoding, mimetype, buffer, size }
         const cloudinary = require('../utils/cloudinary').cloudinary;
-        
+
         let result;
-        
+
         try {
             // Upload to Cloudinary using the buffer
             if (!req.file.buffer) {
@@ -129,7 +129,7 @@ exports.uploadMultipleImages = async (req, res, next) => {
         }
 
         const cloudinary = require('../utils/cloudinary').cloudinary;
-        
+
         // Process files in parallel for faster upload (optimized)
         const uploadPromises = req.files
             .filter(file => file.buffer) // Filter out files without buffer
@@ -168,7 +168,7 @@ exports.uploadMultipleImages = async (req, res, next) => {
 
         // Wait for all uploads to complete (parallel processing)
         const results = await Promise.allSettled(uploadPromises);
-        
+
         // Extract successful uploads
         const successfulResults = results
             .filter(result => result.status === 'fulfilled')
@@ -195,7 +195,48 @@ exports.uploadMultipleImages = async (req, res, next) => {
 };
 
 /**
- * Upload PDF file
+ * Get Cloudinary signature for direct upload
+ * GET /api/upload/signature
+ */
+exports.getSignature = async (req, res, next) => {
+    try {
+        if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+            return res.status(500).json({
+                success: false,
+                message: 'Cloudinary configuration missing',
+            });
+        }
+
+        const cloudinary = require('../utils/cloudinary').cloudinary;
+        const timestamp = Math.round((new Date()).getTime() / 1000);
+        const folder = 'ebook/digital-files';
+
+        // Parameters to sign (must match what frontend sends exactly)
+        const paramsToSign = {
+            timestamp: timestamp,
+            folder: folder,
+            // 'raw' resource type doesn't support transformations usually, but if needed:
+            // ...
+        };
+
+        const signature = cloudinary.utils.api_sign_request(paramsToSign, process.env.CLOUDINARY_API_SECRET);
+
+        res.status(200).json({
+            success: true,
+            signature,
+            timestamp,
+            cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+            apiKey: process.env.CLOUDINARY_API_KEY,
+            folder
+        });
+    } catch (error) {
+        console.error('Signature Generation Error:', error);
+        next(error);
+    }
+};
+
+/**
+ * Upload PDF file (Fallback)
  * POST /api/upload/pdf
  */
 exports.uploadPDF = async (req, res, next) => {
@@ -221,9 +262,9 @@ exports.uploadPDF = async (req, res, next) => {
 
         // With memory storage, we always upload manually to Cloudinary
         const cloudinary = require('../utils/cloudinary').cloudinary;
-        
+
         let result;
-        
+
         try {
             // Upload to Cloudinary using the buffer
             if (!req.file.buffer) {

@@ -25,6 +25,7 @@ router.get('/sections/favourited', productController.getFavourited); // Most vie
 router.get('/sections/new-added', productController.getNewAdded); // Newly added products
 
 // PDF proxy route (must be before /:id route)
+// Requirement: "kunu condition nai, tumi khali pdf ta dekhaw"
 router.get('/:id/pdf-proxy', productController.proxyPDF);
 
 router.get('/:id', productController.getProductById);

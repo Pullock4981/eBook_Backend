@@ -452,43 +452,106 @@ exports.proxyPDF = async (req, res, next) => {
         // If it's an external URL, proxy it through the backend
         if (pdfURL.startsWith('http://') || pdfURL.startsWith('https://')) {
             try {
-                // Download PDF from external URL (server-side, no CORS issues)
-                const response = await axios.get(pdfURL, {
-                    responseType: 'arraybuffer',
-                    timeout: 30000,
-                    headers: {
-                        'User-Agent': 'eBook-Server/1.0'
+                const { cloudinary } = require('../utils/cloudinary');
+
+                // Helper: Robust Cloudinary Meta Extraction
+                const getCloudinaryMeta = (url) => {
+                    if (!url.includes('cloudinary.com')) return null;
+                    const urlParts = url.split('/');
+                    const rIndex = urlParts.findIndex(p => ['raw', 'image', 'video'].includes(p));
+                    if (rIndex === -1) return null;
+
+                    const resourceType = urlParts[rIndex];
+                    const type = urlParts[rIndex + 1];
+
+                    // Extract parts after type, skipping version (v123456) and transformations
+                    let idStartIndex = rIndex + 2;
+                    while (idStartIndex < urlParts.length) {
+                        const part = urlParts[idStartIndex];
+                        // If it's a version (v followed by digits) or contains transform markers (comma, etc), skip it
+                        if (/^v\d+$/.test(part) || part.includes(',') || part.includes('_')) {
+                            idStartIndex++;
+                        } else {
+                            break;
+                        }
                     }
-                });
+
+                    const remaining = urlParts.slice(idStartIndex).join('/');
+                    const fullPath = decodeURIComponent(remaining);
+
+                    // For image type, the publicId is usually without extension
+                    // For raw type, the publicId MUST include the extension
+                    let publicId = fullPath;
+                    let format = '';
+
+                    if (resourceType === 'image') {
+                        const dotIndex = fullPath.lastIndexOf('.');
+                        if (dotIndex !== -1) {
+                            publicId = fullPath.substring(0, dotIndex);
+                            format = fullPath.substring(dotIndex + 1);
+                        }
+                    }
+
+                    return { resourceType, type, publicId, format };
+                };
+
+                const performFetch = async (url) => {
+                    console.log('📦 Proxy - Fetching URL:', url);
+                    return await axios.get(url, {
+                        responseType: 'arraybuffer',
+                        timeout: 120000,
+                        headers: {
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                            'Accept': 'application/pdf,*/*'
+                        }
+                    });
+                };
+
+                let response;
+                try {
+                    // Strategy 1: Attempt Direct Fetch
+                    response = await performFetch(pdfURL);
+                } catch (firstError) {
+                    const status = firstError.response?.status;
+                    console.log(`📦 Proxy - Initial fetch failed with ${status}.`);
+
+                    const meta = getCloudinaryMeta(pdfURL);
+                    if (meta && (status === 401 || status === 403 || status === 404)) {
+                        try {
+                            console.log(`📦 Proxy - Attempting Signed Fallback for [${meta.resourceType}] ${meta.publicId}`);
+                            // Strategy 2: Official Signed URL
+                            const signedURL = cloudinary.utils.private_download_url(meta.publicId, meta.format, {
+                                resource_type: meta.resourceType,
+                                type: meta.type,
+                                expires_at: Math.floor(Date.now() / 1000) + 3600
+                            });
+                            response = await performFetch(signedURL);
+                        } catch (secondError) {
+                            console.error('❌ Proxy - Signed Fallback also failed.');
+                            throw firstError;
+                        }
+                    } else {
+                        throw firstError;
+                    }
+                }
 
                 const pdfBuffer = Buffer.from(response.data);
-
-                // CORS headers are handled by the CORS middleware
-                // Don't set Access-Control-Allow-Origin manually when credentials are used
-                // The CORS middleware will set the correct origin based on the request
-
-                // Set PDF headers
                 res.setHeader('Content-Type', 'application/pdf');
                 res.setHeader('Content-Disposition', 'inline; filename="ebook.pdf"');
                 res.setHeader('Content-Length', pdfBuffer.length);
-                res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+                res.setHeader('Cache-Control', 'public, max-age=3600');
+                return res.send(pdfBuffer);
 
-                // Send PDF buffer
-                res.send(pdfBuffer);
             } catch (error) {
                 console.error('Error proxying PDF:', error.message);
-                console.error('Error details:', error.response?.status, error.response?.statusText);
-                return res.status(500).json({
+                const statusCode = error.response?.status || 500;
+                return res.status(statusCode).json({
                     success: false,
-                    message: 'Failed to load PDF: ' + (error.message || 'Unknown error')
+                    message: `Failed to load PDF: Request failed with status code ${statusCode}`
                 });
             }
         } else {
-            // For local files, return 404 (should use different endpoint)
-            return res.status(404).json({
-                success: false,
-                message: 'Local file access not supported through this endpoint'
-            });
+            return res.status(404).json({ success: false, message: 'Invalid external URL' });
         }
     } catch (error) {
         console.error('Unexpected error in proxyPDF:', error);

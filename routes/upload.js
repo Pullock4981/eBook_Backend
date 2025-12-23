@@ -36,5 +36,12 @@ router.post(
     uploadController.uploadPDF
 );
 
+router.get(
+    '/signature',
+    authenticate,
+    requireAdmin,
+    uploadController.getSignature
+);
+
 module.exports = router;
 
