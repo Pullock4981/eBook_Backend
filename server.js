@@ -97,8 +97,8 @@ app.use(sanitizeInput);
 app.get('/', (req, res) => {
     res.json({
         success: true,
-        message: 'eBook Backend API is running!',
-        version: '1.0.0',
+        message: 'eBook Backend API is running! (v1.1.0)',
+        version: '1.1.0',
         timestamp: new Date().toISOString()
     });
 });
