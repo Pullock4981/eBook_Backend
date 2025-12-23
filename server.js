@@ -48,38 +48,42 @@ const uploadRoutes = require('./routes/upload');
 
 // ==================== Middleware Setup ====================
 
-// Security middleware
-app.use(helmet());
-
-// CORS configuration
-const allowedOrigins = [
-    'http://localhost:3000',
-    'http://localhost:3003',
-    'https://e-book-frontend-two.vercel.app',
-    'https://smartbookbd.com',
-    'https://www.smartbookbd.com'
-];
-
-app.use(cors({
-    origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
-
-        if (allowedOrigins.indexOf(origin) !== -1 || origin.startsWith('http://localhost:')) {
-            callback(null, true);
-        } else {
-            console.log('CORS Blocked for origin:', origin);
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
+// Security middleware - Relaxed for cross-origin support
+app.use(helmet({
+    crossOriginResourcePolicy: false,
+    crossOriginEmbedderPolicy: false,
+    contentSecurityPolicy: false // Disable CSP for API to prevent blocking
 }));
 
+// Robust Manual CORS Implementation
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+
+    // Set CORS headers
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization, Origin');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+    // Handle Preflight OPTIONS request
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+    next();
+});
+
 // Body parser middleware
-app.use(express.json({ limit: '50mb' })); // Increase limit for PDF uploads
+app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Cache Control - DISABLE CACHE for API to prevent 304 CORS issues
+app.use((req, res, next) => {
+    res.header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.header('Pragma', 'no-cache');
+    res.header('Expires', '0');
+    res.header('Surrogate-Control', 'no-store');
+    next();
+});
 
 // Input sanitization middleware (protect against XSS)
 app.use(sanitizeInput);
@@ -91,8 +95,8 @@ app.use(sanitizeInput);
 app.get('/', (req, res) => {
     res.json({
         success: true,
-        message: 'eBook Backend API is running! (v1.1.1)',
-        version: '1.1.1',
+        message: 'eBook Backend API is running! (v1.1.3)',
+        version: '1.1.3',
         timestamp: new Date().toISOString()
     });
 });
