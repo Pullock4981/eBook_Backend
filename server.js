@@ -52,40 +52,17 @@ const uploadRoutes = require('./routes/upload');
 app.use(helmet());
 
 // CORS configuration
-// Allow multiple origins: localhost for development and Netlify for production
-const allowedOrigins = [
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'http://localhost:5173', // Vite default port
-    // Add Netlify domains (wildcard for all Netlify subdomains)
-    /^https:\/\/.*\.netlify\.app$/,
-    // Add custom domain if set
-    process.env.FRONTEND_URL
-].filter(Boolean); // Remove undefined values
-
+// Allow ALL origins for now to fix issues
 app.use(cors({
-    origin: function (origin, callback) {
-        // When credentials are used, we must return the specific origin, not true
-        // This is required by CORS spec when credentials: true
-
-        // Allow requests with no origin (like mobile apps, Postman, server-to-server, etc.)
-        // These are typically safe as they don't use credentials
-        if (!origin) {
-            // Allow no-origin requests (they won't use credentials anyway)
-            return callback(null, true);
-        }
-
-        // Allow ALL origins by returning the origin itself
-        callback(null, origin);
-    },
+    origin: true, // This automatically sets Access-Control-Allow-Origin to the request origin
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
 }));
 
 // Body parser middleware
-app.use(express.json({ limit: '10mb' })); // Limit JSON payload size
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '50mb' })); // Increase limit for PDF uploads
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Input sanitization middleware (protect against XSS)
 app.use(sanitizeInput);
@@ -97,11 +74,12 @@ app.use(sanitizeInput);
 app.get('/', (req, res) => {
     res.json({
         success: true,
-        message: 'eBook Backend API is running! (v1.1.0)',
-        version: '1.1.0',
+        message: 'eBook Backend API is running! (v1.1.1)',
+        version: '1.1.1',
         timestamp: new Date().toISOString()
     });
 });
+
 
 // API status route with database status
 app.get('/api/health', async (req, res) => {
